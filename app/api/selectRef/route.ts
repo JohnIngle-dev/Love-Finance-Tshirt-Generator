@@ -1,19 +1,25 @@
-import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { NextResponse } from "next/server";
+import { headers } from "next/headers";
+import fs from "node:fs";
+import path from "node:path";
 
 export async function GET() {
-  const dir = path.join(process.cwd(), 'public/refs')
-  const images = fs.readdirSync(dir).filter(f => f.match(/\.(png|jpg|jpeg|webp)$/i))
+  const dir = path.join(process.cwd(), "public", "refs");
+  const files = fs.readdirSync(dir).filter(f =>
+    /\.(png|jpe?g|webp)$/i.test(f)
+  );
+  if (!files.length) {
+    return NextResponse.json({ error: "No refs found" }, { status: 404 });
+  }
 
-  if (!images.length)
-    return NextResponse.json({ error: 'No refs found in /public/refs' }, { status: 404 })
+  const pick = files[Math.floor(Math.random() * files.length)];
+  const h = headers();
+  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  const proto = h.get("x-forwarded-proto") || "https";
+  const base = process.env.NEXT_PUBLIC_SITE_URL || `${proto}://${host}`;
 
-  const pick = images[Math.floor(Math.random() * images.length)]
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  // This is the critical absolute, publicly reachable URL:
+  const url = `${base}/refs/${pick}`;
 
-  const url = `${base}/refs/${pick}`
-  return NextResponse.json({ url, filename: pick })
+  return NextResponse.json({ url, filename: pick });
 }

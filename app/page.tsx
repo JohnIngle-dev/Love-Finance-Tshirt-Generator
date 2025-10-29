@@ -1,234 +1,73 @@
 'use client'
-
-import { useState } from 'react'
-
-type SloganPlan = {
-  prompt: string
-  summary?: string
-  layout?: string
-}
+import { useState, useEffect } from "react"
 
 export default function Page() {
-  const [love, setLove] = useState('')
+  const [love, setLove] = useState("")
   const [slogans, setSlogans] = useState<string[]>([])
-  const [selected, setSelected] = useState<string | null>(null)
+  const [slogan, setSlogan] = useState("")
+  const [refUrl, setRefUrl] = useState("")
+  const [result, setResult] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const [refUrl, setRefUrl] = useState<string | null>(null)
-  const [plan, setPlan] = useState<SloganPlan | null>(null)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  useEffect(() => {
+    fetch("/api/selectRef").then(r => r.json()).then(d => setRefUrl(d.url))
+  }, [])
 
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string>('')
-
-  // --- Helpers
-  async function getJSON(res: Response) {
-    const text = await res.text()
-    try { return JSON.parse(text) } catch { throw new Error(text || 'Bad JSON') }
-  }
-
-  // STEP 1: Get slogans from GPT (server route)
-  async function handleGetSlogans() {
-    try {
-      setError('')
-      setSlogans([])
-      setSelected(null)
-      setImageUrl(null)
-      setPlan(null)
-
-      if (!love.trim()) {
-        setError('Tell me what you love about finance first.')
-        return
-      }
-
-      const res = await fetch('/api/slogans', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ love }),
-      })
-      const data = await getJSON(res)
-
-      if (!res.ok) throw new Error(data?.error || 'Failed to get slogans')
-      if (!Array.isArray(data?.options) || data.options.length === 0) {
-        throw new Error('No slogans returned')
-      }
-
-      setSlogans(data.options.slice(0, 3))
-    } catch (e: any) {
-      setError(e?.message || String(e))
-    }
-  }
-
-  // STEP 2: Generate with Flux-Kontext-Max
   async function handleGenerate() {
     try {
-      setBusy(true)
-      setError('')
-      setImageUrl(null)
-      setPlan(null)
-
-      if (!selected) {
-        setError('Choose a slogan first.')
-        return
-      }
-
-      // 2a) Pick a public ref URL from Vercel
-      const refRes = await fetch('/api/selectRef')
-      const refData = await getJSON(refRes)
-      if (!refRes.ok || !refData?.url) throw new Error(refData?.error || 'No reference found')
-      setRefUrl(refData.url)
-
-      // 2b) Ask GPT to build the final style prompt & visual summary
-      const buildRes = await fetch('/api/buildPrompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slogan: selected, refUrl: refData.url })
+      setError("")
+      setLoading(true)
+      const prompt = `replace text with '${slogan.toUpperCase()}' in bold, uppercase letters. warp the headline slightly for a dynamic effect.`
+      const res = await fetch("/api/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, refUrl })
       })
-      const build = await getJSON(buildRes)
-      if (!buildRes.ok || !build?.prompt) throw new Error(build?.error || 'Prompt builder failed')
-      setPlan({ prompt: build.prompt, summary: build.summary, layout: build.layout })
-
-      // 2c) Send to Flux (exact schema required by kontext-max)
-      const renderRes = await fetch('/api/render', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stylePrompt: build.prompt,     // e.g. “replace text with 'CONTROL THE CASH' …”
-          summary: build.summary,        // e.g. “snake coiled around calculator …”
-          ref: refData.url,              // absolute URL to /refs/….
-          aspect: 'match_input_image',   // per kontext-max docs
-        }),
-      })
-      const render = await getJSON(renderRes)
-      if (!renderRes.ok) throw new Error(render?.error || 'Render failed')
-
-      // Replicate SDK usually returns an array of URLs
-      const out =
-        Array.isArray(render?.output) ? render.output[0] :
-        typeof render?.output === 'string' ? render.output :
-        ''
-
-      if (!out) throw new Error('No image URL returned from model')
-      setImageUrl(out)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed")
+      setResult(data.image)
     } catch (e: any) {
-      setError(e?.message || String(e))
+      setError(e.message)
     } finally {
-      setBusy(false)
+      setLoading(false)
     }
   }
 
   return (
-    <main style={{ maxWidth: 900, margin: '0 auto', padding: '24px' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 12 }}>
-        Love Finance T-shirt Designer (Flux Kontext Max)
-      </h1>
+    <main>
+      <h1>Love Finance T-shirt Designer (Flux Kontext Max)</h1>
+      <p>What do you love about finance?</p>
+      <input value={love} onChange={e => setLove(e.target.value)} />
+      <button onClick={async () => {
+        const r = await fetch("/api/slogans", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ love })})
+        const d = await r.json(); setSlogans(d.slogans)
+      }}>Get slogans</button>
 
-      {/* INPUT */}
-      <section style={{ marginBottom: 16 }}>
-        <label htmlFor="love" style={{ display: 'block', fontWeight: 600, marginBottom: 8 }}>
-          What do you love about finance?
-        </label>
-        <input
-          id="love"
-          value={love}
-          onChange={(e) => setLove(e.target.value)}
-          placeholder="e.g. Control. Compliance. Profit. Efficiency."
-          style={{
-            width: '100%',
-            padding: '10px 12px',
-            border: '1px solid #ddd',
-            borderRadius: 8,
-            fontSize: 16,
-          }}
-        />
-        <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
-          <button
-            onClick={handleGetSlogans}
-            disabled={busy}
-            style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #222' }}
-          >
-            Get slogans
-          </button>
-        </div>
-      </section>
-
-      {/* SLOGANS */}
       {slogans.length > 0 && (
-        <section style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 600, marginBottom: 8 }}>Pick a slogan</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {slogans.map((s) => (
-              <button
-                key={s}
-                onClick={() => setSelected(s)}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  border: selected === s ? '2px solid #0a7' : '1px solid #ccc',
-                  background: selected === s ? '#eafff4' : '#fff',
-                  cursor: 'pointer',
-                }}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <div style={{ marginTop: 10 }}>
-            <button
-              onClick={handleGenerate}
-              disabled={!selected || busy}
-              style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #222' }}
-            >
-              {busy ? 'Generating…' : 'Generate with Flux'}
-            </button>
-          </div>
-        </section>
+        <div style={{ marginTop: 10 }}>
+          <b>Pick a slogan</b><br/>
+          {slogans.map(s => (
+            <button key={s} onClick={() => setSlogan(s)} style={{ margin: 4, background: s === slogan ? "#9ef" : "#eee" }}>{s}</button>
+          ))}
+        </div>
       )}
 
-      {/* DEBUG / CONTEXT */}
-      {(refUrl || plan) && (
-        <section style={{ margin: '16px 0', display: 'grid', gap: 12 }}>
-          {refUrl && (
-            <div>
-              <div style={{ fontWeight: 600 }}>Reference used</div>
-              <img
-                src={refUrl}
-                alt="reference"
-                style={{ maxWidth: 320, width: '100%', borderRadius: 8, border: '1px solid #ddd' }}
-              />
-              <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{refUrl}</div>
-            </div>
-          )}
-          {plan && (
-            <div>
-              <div style={{ fontWeight: 600, marginTop: 8 }}>Prompt & summary</div>
-              <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13, whiteSpace: 'pre-wrap' }}>
-                {plan.prompt}
-                {plan.summary ? `\n\nSummary: ${plan.summary}` : ''}
-              </div>
-            </div>
-          )}
-        </section>
+      {refUrl && (
+        <div style={{ marginTop: 20 }}>
+          <b>Reference used</b><br/>
+          <img src={refUrl} width={250} />
+        </div>
       )}
 
-      {/* RESULT */}
-      {imageUrl && (
-        <section style={{ marginTop: 16 }}>
-          <div style={{ fontWeight: 600, marginBottom: 8 }}>Result</div>
-          <img
-            src={imageUrl}
-            alt="Flux-Kontext result"
-            style={{ width: '100%', maxWidth: 768, borderRadius: 8, border: '1px solid #ddd' }}
-          />
-          <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>{imageUrl}</div>
-        </section>
+      {slogan && (
+        <button onClick={handleGenerate} disabled={loading} style={{ marginTop: 20 }}>
+          {loading ? "Generating..." : "Generate with Flux"}
+        </button>
       )}
 
-      {/* ERRORS */}
-      {error && (
-        <section style={{ marginTop: 16, padding: 12, background: '#fff3f3', border: '1px solid #f3cccc', borderRadius: 8 }}>
-          <strong>Error:</strong> {error}
-        </section>
-      )}
+      {error && <p style={{ color: "red" }}>Error: {error}</p>}
+      {result && <img src={result} width={512} style={{ marginTop: 20 }} />}
     </main>
   )
 }

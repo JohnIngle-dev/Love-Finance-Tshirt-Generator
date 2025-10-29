@@ -1,55 +1,74 @@
+// app/api/render/route.ts
+import Replicate from "replicate";
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
+const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN! });
+
+// Flux Kontext Max – set the exact version you got from the Replicate model page
+const MODEL = "black-forest-labs/flux-kontext-max";
+const VERSION = process.env.REPLICATE_KONTEXT_VERSION || ""; // optional override
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { stylePrompt, summary, ref, aspect } = body;
+    const stylePrompt = (body?.stylePrompt ?? "").toString().trim();
+    const summary = (body?.summary ?? "").toString().trim();
+    const ref = (body?.ref ?? "").toString().trim();
 
     if (!stylePrompt) {
       return NextResponse.json({ error: "stylePrompt required" }, { status: 400 });
     }
-
     if (!ref) {
-      return NextResponse.json({ error: "Missing reference image (ref)" }, { status: 400 });
+      return NextResponse.json({ error: "ref (input image URL) required" }, { status: 400 });
     }
 
-    // Combine text + summary into a single prompt string
-    const fullPrompt = summary ? `${stylePrompt}. ${summary}` : stylePrompt;
+    const prompt = stylePrompt; // you already combined text/layout rules upstream
 
-    // ✅ Flux-Kontext-Max input structure (based on Replicate docs)
-    const input = {
-      prompt: fullPrompt,
-      input_image: ref, // <-- THIS is the fix
-      aspect_ratio: aspect || "match_input_image",
-      output_format: "jpg",
+    // Build input exactly as per Replicate docs
+    const input: Record<string, any> = {
+      prompt,
+      input_image: ref,
+      aspect_ratio: "match_input_image",
+      output_format: "png",
       safety_tolerance: 2,
       prompt_upsampling: false,
     };
 
-    console.log("[Flux-Kontext-Max] input →", JSON.stringify(input, null, 2));
-
-    const response = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-max/predictions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ input }),
+    // Create prediction
+    const prediction = await replicate.predictions.create({
+      // either use explicit version or model name
+      ...(VERSION ? { version: VERSION } : { model: MODEL }),
+      input,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Replicate error:", data);
-      return NextResponse.json({ error: JSON.stringify(data) }, { status: 500 });
+    // Poll until done
+    let pred = prediction;
+    const started = Date.now();
+    while (pred.status === "starting" || pred.status === "processing" || pred.status === "queued") {
+      // small backoff
+      await new Promise(r => setTimeout(r, 1200));
+      pred = await replicate.predictions.get(pred.id);
+      // (optional) hard timeout safeguard
+      if (Date.now() - started > 120000) { // 2 min
+        return NextResponse.json({ error: "Timed out waiting for image" }, { status: 504 });
+      }
     }
 
-    console.log("[Flux-Kontext-Max] success →", data);
-    return NextResponse.json(data);
-  } catch (err: any) {
-    console.error("Flux-Kontext render error:", err);
-    return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
+    if (pred.status !== "succeeded") {
+      return NextResponse.json({ error: pred.error || "Generation failed" }, { status: 500 });
+    }
+
+    // Flux returns an array of URLs; sometimes a single string.
+    const out = pred.output as any;
+    const url: string =
+      (Array.isArray(out) ? out[0] : typeof out === "string" ? out : out?.image || out?.url) ?? "";
+
+    if (!url) {
+      return NextResponse.json({ error: "Model returned no image URL" }, { status: 502 });
+    }
+
+    return NextResponse.json({ url, predictionId: pred.id });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || String(e) }, { status: 500 });
   }
 }

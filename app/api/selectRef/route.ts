@@ -10,7 +10,7 @@ export async function GET(){
   const images = files.filter(f=>/\.(png|jpe?g|webp)$/i.test(f));
   if(!images.length) return NextResponse.json({error:'No refs found in /public/refs'}, {status:404});
   const pick = images[Math.floor(Math.random()*images.length)];
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const url = `${base}/refs/${encodeURIComponent(pick)}`;
+  const base = process.env.NEXT_PUBLIC_SITE_URL || `http://${req.headers.get('host')}`
+  const url = `${base}/refs/${file}`
   return NextResponse.json({ url, filename: pick });
 }

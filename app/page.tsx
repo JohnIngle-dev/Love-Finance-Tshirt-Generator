@@ -81,7 +81,7 @@ export default function Page() {
       const buildRes = await fetch('/api/buildPrompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slogan: selected, ref: refData.url }),
+        body: JSON.stringify({ slogan: selected, refUrl: refData.url })
       })
       const build = await getJSON(buildRes)
       if (!buildRes.ok || !build?.prompt) throw new Error(build?.error || 'Prompt builder failed')

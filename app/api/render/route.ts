@@ -12,15 +12,15 @@ function fail(status: number, message: string, extra: Record<string, unknown> = 
 }
 
 async function loadRefsMap(): Promise<MapEntry[]> {
-  const fsPath = path.join(process.cwd(), "public", "refs-map.json");
+  const fsPath = path.join(process.cwd(), "public", "refs_map.json");
   const raw = await fs.readFile(fsPath, "utf8");
   const json = JSON.parse(raw);
   if (!Array.isArray(json) || json.length === 0) {
-    throw new Error("refs-map.json is not a non-empty array");
+    throw new Error("refs_map.json is not a non-empty array");
   }
   const ok = json.every((i: any) => typeof i?.file === "string" && i.file && typeof i?.replace === "string" && i.replace);
   if (!ok) {
-    throw new Error("refs-map.json entries must be { \"file\": \"name.png\", \"replace\": \"description\" }");
+    throw new Error("refs_map.json entries must be { \"file\": \"name.png\", \"replace\": \"description\" }");
   }
   return json as MapEntry[];
 }
@@ -48,15 +48,15 @@ export async function POST(req: NextRequest) {
     try {
       map = await loadRefsMap();
     } catch (e: any) {
-      return fail(500, "refs-map.json missing or invalid.", {
-        expects: "public/refs-map.json as a non-empty array of { file, replace } with file extensions",
+      return fail(500, "refs_map.json missing or invalid.", {
+        expects: "public/refs_map.json as a non-empty array of { file, replace } with file extensions",
         reason: String(e?.message || e),
       });
     }
 
     // Choose entry (specific file if provided; else random)
     const entry = file ? map.find(m => m.file === file) || map[0] : map[Math.floor(Math.random() * map.length)];
-    if (!entry) return fail(500, "No valid entry in refs-map.json.");
+    if (!entry) return fail(500, "No valid entry in refs_map.json.");
 
     // Build absolute URL for the reference image (must include extension in JSON)
     const proto = req.headers.get("x-forwarded-proto") || "https";

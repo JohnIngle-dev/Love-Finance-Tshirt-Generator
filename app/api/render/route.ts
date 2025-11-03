@@ -1,129 +1,118 @@
-import { NextRequest, NextResponse } from "next/server";
+// app/api/render/route.ts
+import { NextResponse } from "next/server";
+import path from "path";
+import fs from "fs/promises";
 import Replicate from "replicate";
-import { REFS_MANIFEST, type ManifestEntry } from "../refs-manifest";
 
 export const runtime = "nodejs";
 
-function fail(status: number, message: string, extra: Record<string, unknown> = {}) {
-  return NextResponse.json({ error: message, ...extra }, { status });
+// ───────────────────────────────────────────────────────────────────────────────
+// Manifest: add/adjust entries here. Keyed by filename inside /public/refs.
+// Each entry must include:
+//   - replace: what visual element to swap out
+//   - keep: what must be preserved in the image
+// You can add as many as you like; unlisted files will use the DEFAULT_ENTRY.
+// ───────────────────────────────────────────────────────────────────────────────
+type ManifestEntry = { replace: string; keep: string };
+const MANIFEST: Record<string, ManifestEntry> = {
+  // EXAMPLES — edit to match the actual files in /public/refs
+  // "tee_star.png":       { replace: "the centre star emblem", keep: "the shirt, fabric texture, lighting and background" },
+  // "tee_badge.jpg":      { replace: "the chest badge graphic", keep: "the shirt, seams, fabric folds, background" },
+  // "tee_skull.png":      { replace: "the skull motif", keep: "the shirt, perspective, fabric detail, background" },
+  // "tee_circle.png":     { replace: "the circular logo", keep: "the shirt, colour, lighting and background" },
+};
+
+// Sensible fallback if a file isn't listed in MANIFEST yet
+const DEFAULT_ENTRY: ManifestEntry = {
+  replace: "the main graphic",
+  keep: "the shirt, fabric texture, folds, colours, lighting and background",
+};
+
+// Utility: get manifest entry for file or fallback
+function getEntryForFile(file: string): ManifestEntry {
+  return MANIFEST[file] ?? DEFAULT_ENTRY;
 }
 
-async function urlOk(url: string) {
-  try {
-    const r = await fetch(url, { method: "HEAD", cache: "no-store" });
-    return r.ok;
-  } catch {
-    return false;
-  }
+// Build the public URL for a ref image in /public/refs
+function refUrl(baseUrl: string, file: string) {
+  return `${baseUrl}/refs/${encodeURIComponent(file)}`;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { slogan, visual, file, excludeFile } = (await req.json()) as {
-      slogan: string;
-      visual: string;
-      file?: string;         // force a specific ref
-      excludeFile?: string;  // avoid this ref when picking randomly
-    };
+    const { slogan, visual, file, excludeFile } = await req.json();
 
     if (!slogan || !visual) {
-      return fail(400, "Missing 'slogan' or 'visual'.");
+      return NextResponse.json(
+        { error: "Missing required fields: slogan and visual" },
+        { status: 400 }
+      );
     }
 
-    // Validate manifest
-    const manifest: ManifestEntry[] = Array.isArray(REFS_MANIFEST) ? REFS_MANIFEST : [];
-    if (!manifest.length) {
-      return fail(500, "In-code manifest is empty.", {
-        hint: "Edit app/api/refs-manifest.ts and add entries."
-      });
-    }
-    const bad = manifest.find(m => !m?.file || !m?.replace);
-    if (bad) return fail(500, "Manifest entry missing 'file' or 'replace'.", { bad });
-
-    // Choose entry
-    let entry: ManifestEntry | undefined;
-    if (file) {
-      entry = manifest.find(m => m.file === file) || manifest[0];
-    } else {
-      const pool = excludeFile
-        ? manifest.filter(m => m.file !== excludeFile)
-        : manifest.slice();
-      const pickFrom = pool.length ? pool : manifest;
-      entry = pickFrom[Math.floor(Math.random() * pickFrom.length)];
-    }
-
-    if (!entry) return fail(500, "No valid entry in manifest.");
-
-    // Build image URL
-    const proto = req.headers.get("x-forwarded-proto") || "https";
-    const host = req.headers.get("host") || "localhost:3000";
+    // Resolve deployment base URL
+    const proto = (req.headers as any).get("x-forwarded-proto") || "https";
+    const host = (req.headers as any).get("host") || "localhost:3000";
     const baseUrl = `${proto}://${host}`;
-    const imageUrl = `${baseUrl}/refs/${encodeURIComponent(entry.file)}`;
 
-    // Check reachability
-    const reachable = await urlOk(imageUrl);
-    if (!reachable) {
-      return fail(500, "Reference image not reachable.", {
-        imageTried: imageUrl,
-        hint: "Ensure the file exists at public/refs/<filename-with-extension>."
-      });
+    // Resolve available reference images
+    const refsDir = path.join(process.cwd(), "public", "refs");
+    let files = await fs.readdir(refsDir).catch(() => []);
+    files = files.filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f));
+
+    if (!files.length) {
+      return NextResponse.json(
+        { error: "No reference images found in /public/refs" },
+        { status: 500 }
+      );
     }
 
-    // Replicate setup
-    const token = process.env.REPLICATE_API_TOKEN;
-    if (!token) return fail(500, "REPLICATE_API_TOKEN not set.");
+    // Pick the file to use:
+    //  - if client specified a file and it's present, use it
+    //  - otherwise pick randomly (excluding excludeFile, if provided)
+    let chosen = file && files.includes(file) ? file : undefined;
+    if (!chosen) {
+      const pool = excludeFile ? files.filter((f) => f !== excludeFile) : files;
+      chosen = pool[Math.floor(Math.random() * pool.length)];
+    }
 
-    const modelBase = process.env.REPLICATE_MODEL || "black-forest-labs/flux-kontext-max";
-    const version = process.env.REPLICATE_VERSION;
-    const modelRef = (version ? `${modelBase}:${version}` : modelBase) as
-      | `${string}/${string}`
-      | `${string}/${string}:${string}`;
+    const entry = getEntryForFile(chosen!);
 
-    // Streamlined prompt
-    const prompt = `Replace text in the image with "${slogan}", replace ${entry.replace} with ${visual}.`;
+    // Your requested prompt structure
+    const prompt = `Replace text in the image with "${slogan}", replace ${entry.replace} with ${visual}, keep ${entry.keep}.`;
 
-    // Call Replicate
-    const replicate = new Replicate({ auth: token });
+    // Prepare Replicate input
     const input = {
       prompt,
-      input_image: imageUrl,
+      input_image: refUrl(baseUrl, chosen!),
       aspect_ratio: "match_input_image",
       output_format: "jpg",
       safety_tolerance: 2,
-      prompt_upsampling: false
+      prompt_upsampling: false,
     };
 
-    let output: unknown;
-    try {
-      output = await replicate.run(modelRef, { input });
-    } catch (e: any) {
-      return fail(502, "Replicate run failed.", { modelRef, input, reason: String(e?.message || e) });
-    }
+    const replicate = new Replicate({
+      auth: process.env.REPLICATE_API_TOKEN || "",
+    });
 
-    // Normalise outputs
-    let resultImages: string[] = [];
-    if (Array.isArray(output)) resultImages = output.map(v => (typeof v === "string" ? v : String(v)));
-    else if (typeof output === "string") resultImages = [output];
-    else if (output && typeof output === "object" && "output" in (output as any)) {
-      const out = (output as any).output;
-      if (Array.isArray(out)) resultImages = out.map((v: unknown) => (typeof v === "string" ? v : String(v)));
-      else if (typeof out === "string") resultImages = [out];
-    }
+    const model = "black-forest-labs/flux-kontext-max";
+    const output = await replicate.run(model as `${string}/${string}`, { input });
 
-    if (!resultImages.length) {
-      return fail(502, "Replicate returned no images.", { modelRef, input });
-    }
+    const resultImages = Array.isArray(output) ? output : [output];
 
     return NextResponse.json({
       prompt,
-      reference: imageUrl,   // not displayed in UI
       visual,
       replace: entry.replace,
-      file: entry.file,      // important: return which ref was used
+      keep: entry.keep,
+      reference: refUrl(baseUrl, chosen!),
+      file: chosen,
       result: resultImages,
-      modelRef
+      modelRef: model,
     });
-  } catch (err: any) {
-    return fail(500, "Failed to render with Replicate.", { reason: String(err?.message || err) });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e?.message || "Render failed" },
+      { status: 500 }
+    );
   }
 }

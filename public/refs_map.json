@@ -1,38 +1,47 @@
 [
   {
     "file": "536000820_18084508084870705_1863751485079456271_n.png",
-    "replace": "metal engine behind skull"
+    "replace": "metal engine behind skull",
+    "Keep": "skull and fire"
   },
   {
     "file": "532324876_18083609578870705_7786025600770441868_n.png",
-    "replace": "skull"
+    "replace": "skull",
+    "keep": "purple and red cobra snake"
   },
   {
     "file": "520941856_18082385257870705_3068542842883755053_n.png",
-    "replace": "cards and chips"
+    "replace": "cards and chips",
+    "keep": "revolver and fire"
   },
   {
     "file": "491416516_18073621093870705_1553309421817675182_n.png",
-    "replace": "skulls on floor"
+    "replace": "skulls on floor",
+    "keep": "hooded man with axe"
   },
   {
     "file": "491415021_18072545323870705_8507131698627680283_n.png",
-    "replace": "car"
+    "replace": "car",
+    "keep": "city background and border chains"
   },
   {
     "file": "490757356_18072793927870705_5264794875672410706_n.png",
-    "replace": "dragon"
+    "replace": "golden dragon",
+    "keep": "samurai"
   },
  {
     "file": "483086357_18068930341870705_8434049462797539537_n.png",
-    "replace": "skull"
+    "replace": "skull",
+    "keep": "barbed wire and blood"
   },
  {
     "file": "477528558_18067213492870705_5202122066376182871_n.png",
-    "replace": "image"
+    "replace": "person and guns",
+    "keep": "barbed wire and lighting
   },
  {
     "file": "476075948_18066024388870705_4787732589082743204_n.png",
-    "replace": "globe"
+    "replace": "globe",
+    "Keep": "sword, blood and skelton"
   },
 ]

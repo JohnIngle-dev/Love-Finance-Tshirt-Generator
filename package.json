@@ -5,20 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "postinstall": "tailwindcss -v >/dev/null 2>&1 || true"
+    "start": "next start"
   },
   "dependencies": {
+    "autoprefixer": "^10.4.19",
     "next": "14.2.5",
+    "openai": "^4.52.0",
+    "postcss": "^8.4.35",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "openai": "^4.52.0",
-    "replicate": "^0.31.1"
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.35",
-    "tailwindcss": "^3.4.10",
-    "typescript": "^5.4.0"
+    "replicate": "^0.31.1",
+    "tailwindcss": "^3.4.10"
   }
 }

@@ -2,21 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base background */
+/* Base */
+:root { color-scheme: dark; }
+html, body { height: 100%; }
+
+/* Scene */
 .bg-base {
   background: #09090b;
 }
 
-/* Radial vignettes for a metal poster vibe */
+/* Vignettes */
 .bg-vignette {
   background:
-    radial-gradient(1200px 800px at 8% -10%, rgba(239,68,68,0.28), transparent 45%),
-    radial-gradient(900px 700px at 110% -20%, rgba(139,92,246,0.28), transparent 50%),
+    radial-gradient(1200px 800px at 8% -10%, rgba(239,68,68,0.30), transparent 45%),
+    radial-gradient(900px 700px at 110% -20%, rgba(139,92,246,0.30), transparent 50%),
     radial-gradient(900px 700px at -10% 120%, rgba(244,63,94,0.22), transparent 50%),
     linear-gradient(#09090b, #09090b);
 }
 
-/* SVG noise (inline, no asset needed) */
+/* SVG noise (inline) */
 .bg-noise {
   background-image: url("data:image/svg+xml;utf8,\
   <svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 100 100'>\
@@ -25,7 +29,7 @@
   </svg>");
 }
 
-/* Utility to clamp container width a touch more on very large screens */
+/* Helpful tweaks */
 @media (min-width: 1400px) {
-  .max-w-6xl { max-width: 68rem; }
+  .max-w-6xl { max-width: 70rem; }
 }

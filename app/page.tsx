@@ -84,11 +84,14 @@ export default function Page() {
       {/* Hero */}
       <div className="text-center mb-10 md:mb-14">
         <h1 className={`${gothic.className} text-5xl md:text-6xl tracking-wide`}>T-Shirt Generator</h1>
+        <p className="mt-3 text-zinc-300/90 text-sm md:text-base">
+          Enter what you love about finance, pick a riff-ready line, render, then refresh the design.
+        </p>
       </div>
 
-      {/* Two-column: Form left, Output right */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {/* Form card */}
+      {/* Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+        {/* Form */}
         <section className="rounded-2xl ring-1 ring-white/10 bg-gradient-to-b from-zinc-900/85 to-black/70 shadow-[0_15px_50px_rgba(0,0,0,0.45)] p-6 md:p-8">
           <form onSubmit={getOptions} className="space-y-6">
             <label className="block">
@@ -96,7 +99,7 @@ export default function Page() {
                 What do you love about finance?
               </div>
               <textarea
-                className="w-full rounded-2xl bg-black/70 border border-zinc-700/70 focus:border-red-500/70 focus:outline-none focus:ring-2 focus:ring-red-600/40 text-lg md:text-xl leading-relaxed p-6 md:p-7 placeholder:text-zinc-500 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]"
+                className="w-full rounded-2xl bg-black/75 border border-zinc-700/70 focus:border-red-500/70 focus:outline-none focus:ring-2 focus:ring-red-600/40 text-lg md:text-xl leading-relaxed p-6 md:p-7 placeholder:text-zinc-500 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]"
                 placeholder="e.g. compounding, clean books, cashflow control…"
                 value={love}
                 onChange={(e) => setLove(e.target.value)}
@@ -157,6 +160,7 @@ export default function Page() {
 
         {/* Right column */}
         <section className="space-y-6">
+          {/* Options */}
           {!rendered && options.length === 3 && (
             <div className="grid gap-5">
               {options.map((o, i) => (
@@ -185,6 +189,7 @@ export default function Page() {
             </div>
           )}
 
+          {/* Result */}
           {rendered && (
             <div className="rounded-2xl ring-1 ring-white/10 bg-gradient-to-b from-zinc-900/85 to-black/70 shadow-[0_15px_50px_rgba(0,0,0,0.45)] p-6 md:p-8 space-y-6">
               <div className="flex items-center justify-between gap-4">

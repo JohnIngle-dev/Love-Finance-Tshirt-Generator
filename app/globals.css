@@ -2,73 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== Fallback styles if Tailwind fails to load ===== */
-html, body {
-  height: 100%;
-  margin: 0;
-  background: #1f1f1f;
-  color: #fff;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+/* Base */
+html, body { background:#1f1f1f; color:#fff; }
+
+/* Slim single-line pill input */
+.input-pill{
+  width:100%;
+  max-width:880px;
+  border-radius:9999px;
+  border:2px solid #d7e14c;
+  background:transparent;
+  color:#fff;
+  padding:12px 20px;          /* tighter height */
+  font-size:20px;
+  line-height:1.2;
+  height:56px;                /* fixed to one line */
+  outline:none;
 }
+.input-pill::placeholder{ color:rgba(255,255,255,.7); }
 
-/* A centred container that works even without Tailwind */
-.center-page {
-  min-height: calc(100dvh - 160px);
-  display: flex;
-  align-items: start;         /* becomes centre on wide viewports using media query below */
-  justify-content: center;
-  text-align: center;
-  padding: 0 24px 80px;
-}
+/* Buttons */
+.btn-primary{ background:#d7e14c; color:#111; border:2px solid #d7e14c; border-radius:9999px; padding:12px 22px; font-weight:700; }
+.btn-ghost{ background:transparent; color:#fff; border:2px solid rgba(255,255,255,.35); border-radius:9999px; padding:12px 22px; }
 
-@media (min-width: 768px) {
-  .center-page { align-items: center; }
-}
+/* Cards */
+.card{ background:#2a2a2a; border:1px solid rgba(255,255,255,.18); border-radius:18px; padding:22px; }
 
-.hero-title {
-  line-height: .9;
-  font-size: clamp(48px, 10vw, 128px);
-  color: #fff;
-}
-
-.input-pill {
-  width: 100%;
-  max-width: 840px;
-  border-radius: 9999px;
-  border: 2px solid #d7e14c;
-  background: transparent;
-  color: #fff;
-  padding: 16px 22px;
-  font-size: 18px;
-  outline: none;
-}
-
-.input-pill::placeholder { color: rgba(255,255,255,.7); }
-
-.btn-primary,
-.btn-ghost {
-  border-radius: 9999px;
-  padding: 12px 22px;
-  font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: #d7e14c;
-  color: #111;
-  border: 2px solid #d7e14c;
-}
-
-.btn-ghost {
-  background: transparent;
-  color: #fff;
-  border: 2px solid rgba(255,255,255,.35);
-}
-
-.card {
-  background: #2a2a2a;
-  border: 1px solid rgba(255,255,255,.18);
-  border-radius: 18px;
-  padding: 22px;
+/* Selected banner */
+.selected{
+  border:2px solid #d7e14c;
+  border-radius:16px;
+  padding:14px 18px;
+  background:#222;
 }

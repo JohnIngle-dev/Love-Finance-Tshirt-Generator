@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const proto = (req.headers as any).get("x-forwarded-proto") || "https";
   const host = (req.headers as any).get("host") || "localhost:3000";
   const baseUrl = `${proto}://${host}`;
-  const fsPath = path.join(process.cwd(), "public", "refs-map.json");
+  const fsPath = path.join(process.cwd(), "public", "refs_map.json");
 
   const out: any = { fsPath, baseUrl, refsUrl: `${baseUrl}/refs/` };
 

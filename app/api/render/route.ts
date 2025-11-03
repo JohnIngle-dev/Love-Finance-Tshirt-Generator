@@ -11,6 +11,7 @@ function fail(status: number, message: string, extra: Record<string, unknown> = 
   return NextResponse.json({ error: message, ...extra }, { status });
 }
 
+// Filesystem-only loader (looks for public/refs_map.json)
 async function loadRefsMap(): Promise<MapEntry[]> {
   const fsPath = path.join(process.cwd(), "public", "refs_map.json");
   const raw = await fs.readFile(fsPath, "utf8");
@@ -18,14 +19,14 @@ async function loadRefsMap(): Promise<MapEntry[]> {
   if (!Array.isArray(json) || json.length === 0) {
     throw new Error("refs_map.json is not a non-empty array");
   }
-  const ok = json.every((i: any) => typeof i?.file === "string" && i.file && typeof i?.replace === "string" && i.replace);
-  if (!ok) {
-    throw new Error("refs_map.json entries must be { \"file\": \"name.png\", \"replace\": \"description\" }");
-  }
+  const ok = json.every(
+    (i: any) => typeof i?.file === "string" && i.file && typeof i?.replace === "string" && i.replace
+  );
+  if (!ok) throw new Error("entries must be { \"file\": \"name.png\", \"replace\": \"description\" }");
   return json as MapEntry[];
 }
 
-// Optional: verify the image URL actually resolves in the deployed env
+// Optional: verify the image URL actually resolves
 async function urlOk(url: string) {
   try {
     const r = await fetch(url, { method: "HEAD", cache: "no-store" });
@@ -38,42 +39,38 @@ async function urlOk(url: string) {
 export async function POST(req: NextRequest) {
   try {
     const { slogan, visual, file } = (await req.json()) as { slogan: string; visual: string; file?: string };
+    if (!slogan || !visual) return fail(400, "Missing 'slogan' or 'visual'.");
 
-    if (!slogan || !visual) {
-      return fail(400, "Missing 'slogan' or 'visual'.");
-    }
-
-    // Load manifest from filesystem (avoids Vercel 401 on internal fetch)
+    // Load manifest (underscore version)
     let map: MapEntry[];
     try {
       map = await loadRefsMap();
     } catch (e: any) {
       return fail(500, "refs_map.json missing or invalid.", {
-        expects: "public/refs_map.json as a non-empty array of { file, replace } with file extensions",
+        expects: "place public/refs_map.json as a non-empty array of { file, replace } with file extensions",
         reason: String(e?.message || e),
       });
     }
 
-    // Choose entry (specific file if provided; else random)
+    // Choose entry
     const entry = file ? map.find(m => m.file === file) || map[0] : map[Math.floor(Math.random() * map.length)];
     if (!entry) return fail(500, "No valid entry in refs_map.json.");
 
-    // Build absolute URL for the reference image (must include extension in JSON)
+    // Build absolute URL to the reference image
     const proto = req.headers.get("x-forwarded-proto") || "https";
     const host = req.headers.get("host") || "localhost:3000";
     const baseUrl = `${proto}://${host}`;
     const imageUrl = `${baseUrl}/refs/${encodeURIComponent(entry.file)}`;
 
-    // Verify the image URL is publicly reachable before calling Replicate
     const reachable = await urlOk(imageUrl);
     if (!reachable) {
-      return fail(500, "Reference image is not reachable at runtime.", {
+      return fail(500, "Reference image is not reachable.", {
         imageUrl,
-        hint: "Ensure the file exists at public/refs/<name-with-extension> and is committed in this deployment.",
+        hint: "Ensure the file exists at public/refs/<filename-with-extension> and is committed.",
       });
     }
 
-    // Compose model ref
+    // Replicate
     const token = process.env.REPLICATE_API_TOKEN;
     if (!token) return fail(500, "REPLICATE_API_TOKEN not set.");
     const modelBase = process.env.REPLICATE_MODEL || "black-forest-labs/flux-kontext-max";
@@ -82,13 +79,11 @@ export async function POST(req: NextRequest) {
       | `${string}/${string}`
       | `${string}/${string}:${string}`;
 
-    // Single prompt
     const prompt =
       `Replace text in the image with "${slogan}", replace ${entry.replace} with ${visual}. ` +
       "Keep composition natural; preserve garment texture and folds. No bevel or glow. " +
       "Avoid faces, people, weapons, logos, or religious symbols.";
 
-    // Call Replicate
     const replicate = new Replicate({ auth: token });
     const input = {
       prompt,
@@ -103,14 +98,9 @@ export async function POST(req: NextRequest) {
     try {
       output = await replicate.run(modelRef, { input });
     } catch (e: any) {
-      return fail(502, "Replicate run failed.", {
-        modelRef,
-        input,
-        reason: String(e?.message || e),
-      });
+      return fail(502, "Replicate run failed.", { modelRef, input, reason: String(e?.message || e) });
     }
 
-    // Normalise outputs
     let resultImages: string[] = [];
     if (Array.isArray(output)) resultImages = output.map(v => (typeof v === "string" ? v : String(v)));
     else if (typeof output === "string") resultImages = [output];

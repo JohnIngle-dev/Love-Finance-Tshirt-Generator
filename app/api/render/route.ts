@@ -19,10 +19,11 @@ async function urlOk(url: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { slogan, visual, file } = (await req.json()) as {
+    const { slogan, visual, file, excludeFile } = (await req.json()) as {
       slogan: string;
       visual: string;
-      file?: string;
+      file?: string;         // force a specific ref
+      excludeFile?: string;  // avoid this ref when picking randomly
     };
 
     if (!slogan || !visual) {
@@ -36,17 +37,20 @@ export async function POST(req: NextRequest) {
         hint: "Edit app/api/refs-manifest.ts and add entries."
       });
     }
-
     const bad = manifest.find(m => !m?.file || !m?.replace);
-    if (bad) {
-      return fail(500, "Manifest entry missing 'file' or 'replace'.", { bad });
-    }
+    if (bad) return fail(500, "Manifest entry missing 'file' or 'replace'.", { bad });
 
     // Choose entry
-    const entry =
-      file
-        ? manifest.find(m => m.file === file) || manifest[0]
-        : manifest[Math.floor(Math.random() * manifest.length)];
+    let entry: ManifestEntry | undefined;
+    if (file) {
+      entry = manifest.find(m => m.file === file) || manifest[0];
+    } else {
+      const pool = excludeFile
+        ? manifest.filter(m => m.file !== excludeFile)
+        : manifest.slice();
+      const pickFrom = pool.length ? pool : manifest;
+      entry = pickFrom[Math.floor(Math.random() * pickFrom.length)];
+    }
 
     if (!entry) return fail(500, "No valid entry in manifest.");
 
@@ -112,10 +116,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       prompt,
-      reference: imageUrl,
+      reference: imageUrl,   // not displayed in UI
       visual,
       replace: entry.replace,
-      file: entry.file,
+      file: entry.file,      // important: return which ref was used
       result: resultImages,
       modelRef
     });

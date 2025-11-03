@@ -2,22 +2,22 @@ import "./globals.css";
 import { Rock_Salt, Inter } from "next/font/google";
 
 const brush = Rock_Salt({ weight: "400", subsets: ["latin"], display: "swap" });
-const inter = Inter({ weight: ["400", "500", "600", "700"], subsets: ["latin"], display: "swap" });
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata = {
   title: "T-Shirt Generator",
-  description: "Love Finance — Metal merch generator",
+  description: "Love Finance — Metal Merch Generator",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
-      <body className={`min-h-screen ${inter.className} bg-ink text-ink-100 antialiased`}>
-        <div className="theme-root pointer-events-none fixed inset-0 -z-10" />
-        <header className="py-6">
-          <div className="mx-auto max-w-6xl px-6 text-center">
-            <h1 className={`${brush.className} hero-title select-none`}>T-SHIRT<br />GENERATOR</h1>
-          </div>
+    <html lang="en">
+      <body className={`min-h-screen ${inter.className} bg-[#1f1f1f] text-white`}>
+        <div className="fixed inset-0 -z-10 bg-[#1f1f1f]" />
+        <header className="pt-12 pb-8 text-center">
+          <h1 className={`${brush.className} text-6xl md:text-8xl text-white leading-none`}>
+            T-SHIRT<br />GENERATOR
+          </h1>
         </header>
         {children}
       </body>

@@ -4,8 +4,13 @@ import { useState } from "react";
 
 type Option = { slogan: string; visual: string };
 type RenderResponse = {
-  prompt: string; reference: string; visual: string;
-  replace: string; file: string; result: string[]; modelRef: string;
+  prompt: string;
+  reference: string;
+  visual: string;
+  replace: string;
+  file: string;
+  result: string[];
+  modelRef: string;
 };
 
 export default function Page() {
@@ -42,8 +47,9 @@ export default function Page() {
   }
 
   async function renderWithReplicate(opt: Option, file?: string, excludeFile?: string) {
-    // show the selected banner immediately
+    // Immediately lock in the choice and clear others
     setChosen(opt);
+    setOptions([]);
     setRendering(true);
     setErr(null);
     setRendered(null);
@@ -79,7 +85,6 @@ export default function Page() {
       <section className="mx-auto max-w-[880px]">
         <p className="mb-4 text-2xl font-semibold">What do you love about finance?</p>
         <form onSubmit={getOptions} className="flex flex-col items-center gap-4">
-          {/* single-line input (was textarea) */}
           <input
             type="text"
             className="input-pill"
@@ -110,34 +115,35 @@ export default function Page() {
         {err && <div className="mt-4 text-red-300 text-sm">{err}</div>}
       </section>
 
-      {/* Selected slogan banner */}
+      {/* Selected slogan */}
       {chosen && (
-        <section className="mt-8 selected inline-block text-left">
-          <div className="text-lg font-semibold">Selected slogan</div>
-          <div className="mt-1 text-2xl font-bold">{chosen.slogan}</div>
-          <div className="mt-1 text-sm text-white/80">Motif: {chosen.visual}</div>
-          {rendering && <div className="mt-2 text-sm text-white/70">Rendering…</div>}
+        <section className="mt-10 flex justify-center">
+          <div className="card w-full max-w-[720px] border-2 border-[#d7e14c] bg-[#262626] flex flex-col items-center text-center">
+            <div className="text-3xl font-bold text-white leading-tight">{chosen.slogan}</div>
+            <div className="text-sm mt-2 text-zinc-300 italic">Motif: {chosen.visual}</div>
+            {rendering && <div className="mt-2 text-sm text-white/70">Rendering...</div>}
+          </div>
         </section>
       )}
 
       {/* Options as buttons */}
-      {!rendered && options.length > 0 && (
+      {!rendered && !chosen && options.length > 0 && (
         <section className="mt-10 flex flex-col gap-4 items-center">
           {options.map((o, i) => (
             <button
               key={i}
               onClick={() => renderWithReplicate(o)}
               disabled={rendering}
-              className="card w-full max-w-[720px] text-white text-2xl font-semibold py-5 px-6 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-2xl shadow-lg transition"
+              className="card w-full max-w-[720px] text-white text-2xl font-semibold py-5 px-6 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-2xl shadow-lg transition text-center"
             >
               {o.slogan}
-              <div className="text-sm mt-2 text-zinc-300">Visual: {o.visual}</div>
+              <div className="text-sm mt-2 text-zinc-400 italic">Visual: {o.visual}</div>
             </button>
           ))}
         </section>
       )}
 
-      {/* Result */}
+      {/* Rendered result */}
       {rendered && (
         <section className="mt-12">
           <div className="mb-6">

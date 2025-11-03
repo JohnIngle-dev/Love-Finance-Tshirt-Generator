@@ -4,8 +4,13 @@ import { useState } from "react";
 
 type Option = { slogan: string; visual: string };
 type RenderResponse = {
-  prompt: string; reference: string; visual: string;
-  replace: string; file: string; result: string[]; modelRef: string;
+  prompt: string;
+  reference: string;
+  visual: string;
+  replace: string;
+  file: string;
+  result: string[];
+  modelRef: string;
 };
 
 export default function Page() {
@@ -19,36 +24,50 @@ export default function Page() {
 
   async function getOptions(e: React.FormEvent) {
     e.preventDefault();
-    setErr(null); setRendered(null); setChosen(null); setOptions([]); setLoading(true);
+    setErr(null);
+    setRendered(null);
+    setChosen(null);
+    setOptions([]);
+    setLoading(true);
     try {
       const res = await fetch("/api/slogans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ love })
+        body: JSON.stringify({ love }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to generate options");
       setOptions(data.options || []);
     } catch (e: any) {
       setErr(e.message || "Something went wrong");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function renderWithReplicate(opt: Option, file?: string, excludeFile?: string) {
-    setRendering(true); setErr(null); setRendered(null);
+    setRendering(true);
+    setErr(null);
+    setRendered(null);
     try {
       const body: any = { slogan: opt.slogan, visual: opt.visual };
       if (file) body.file = file;
       if (excludeFile) body.excludeFile = excludeFile;
 
       const res = await fetch("/api/render", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to render");
-      setRendered(data as RenderResponse); setChosen(opt);
-    } catch (e: any) { setErr(e.message || "Render failed"); }
-    finally { setRendering(false); }
+      setRendered(data as RenderResponse);
+      setChosen(opt);
+    } catch (e: any) {
+      setErr(e.message || "Render failed");
+    } finally {
+      setRendering(false);
+    }
   }
 
   async function refreshDifferentRef() {
@@ -65,8 +84,10 @@ export default function Page() {
           <textarea
             className="input-pill"
             placeholder="e.g. compounding, clean books, cashflow control…"
-            value={love} onChange={(e) => setLove(e.target.value)}
-            rows={3} required
+            value={love}
+            onChange={(e) => setLove(e.target.value)}
+            rows={3}
+            required
           />
           <div className="flex gap-3">
             <button type="submit" disabled={loading} className="btn-primary">
@@ -74,7 +95,13 @@ export default function Page() {
             </button>
             <button
               type="button"
-              onClick={() => { setLove(""); setOptions([]); setRendered(null); setErr(null); setChosen(null); }}
+              onClick={() => {
+                setLove("");
+                setOptions([]);
+                setRendered(null);
+                setErr(null);
+                setChosen(null);
+              }}
               className="btn-ghost"
             >
               Reset
@@ -84,17 +111,18 @@ export default function Page() {
         {err && <div className="mt-4 text-red-300 text-sm">{err}</div>}
       </section>
 
-      {/* Options */}
-      {!rendered && options.length === 3 && (
-        <section className="mt-10 grid gap-6 md:grid-cols-3">
+      {/* Options as buttons */}
+      {!rendered && options.length > 0 && (
+        <section className="mt-10 flex flex-col gap-4 items-center">
           {options.map((o, i) => (
             <button
-              key={i} onClick={() => renderWithReplicate(o)} disabled={rendering}
-              className="card text-left md:text-center"
+              key={i}
+              onClick={() => renderWithReplicate(o)}
+              disabled={rendering}
+              className="card w-full max-w-[720px] text-white text-2xl font-semibold py-6 px-6 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-2xl shadow-lg transition"
             >
-              <div className="text-2xl font-semibold leading-tight text-white">{o.slogan}</div>
-              <div className="mt-3 text-xs uppercase tracking-widest text-white/70">Motif</div>
-              <div className="text-sm text-white/90">{o.visual}</div>
+              {o.slogan}
+              <div className="text-sm mt-2 text-zinc-400 italic">Visual: {o.visual}</div>
             </button>
           ))}
         </section>
@@ -106,12 +134,14 @@ export default function Page() {
           <div className="mb-6">
             <h3 className="text-2xl font-semibold">Generated design</h3>
             <p className="text-sm text-white/80">
-              Text: <span className="font-semibold">{chosen?.slogan}</span> · Motif: <span className="font-semibold">{rendered.visual}</span>
+              Text: <span className="font-semibold">{chosen?.slogan}</span> · Motif:{" "}
+              <span className="font-semibold">{rendered.visual}</span>
             </p>
           </div>
 
           <button
-            type="button" onClick={refreshDifferentRef}
+            type="button"
+            onClick={refreshDifferentRef}
             disabled={rendering || !chosen}
             className="btn-primary mb-6"
           >
@@ -121,7 +151,12 @@ export default function Page() {
           <div className="grid gap-6 md:grid-cols-2">
             {rendered.result?.map((url, idx) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={idx} src={url} alt="Generated" className="w-full rounded-xl border border-white/20" />
+              <img
+                key={idx}
+                src={url}
+                alt="Generated"
+                className="w-full rounded-xl border border-white/20"
+              />
             ))}
           </div>
         </section>

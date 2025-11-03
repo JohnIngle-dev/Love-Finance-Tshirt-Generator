@@ -2,47 +2,96 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base */
-:root { color-scheme: dark; }
-html, body { height: 100%; }
-.bg-base { background: #09090b; }
-
-/* Ramp-like soft vignettes, but heavier for metal */
-.bg-vignette {
-  background:
-    radial-gradient(1200px 800px at 8% -10%, rgba(239,68,68,0.32), transparent 45%),
-    radial-gradient(900px 700px at 110% -20%, rgba(139,92,246,0.30), transparent 50%),
-    radial-gradient(900px 700px at -10% 120%, rgba(244,63,94,0.20), transparent 50%),
-    linear-gradient(#09090b, #09090b);
+/* ---- Theme tokens ---- */
+:root{
+  --ink-900:#1f1f1f;      /* charcoal */
+  --ink-800:#242424;
+  --ink-700:#2a2a2a;
+  --ink-100:#f4f4f4;      /* off-white ink */
+  --accent:#d7e14c;       /* neon yellow-green like your screenshot */
+  --accent-700:#c9d63f;
+  --accent-800:#b7c635;
 }
 
-/* Noise */
-.bg-noise {
+.bg-ink{ background: var(--ink-900); }
+.text-ink-100{ color: var(--ink-100); }
+
+/* vignette + grain for subtle grit */
+.theme-root {
+  background:
+    radial-gradient(1200px 800px at 20% -10%, rgba(215,225,76,0.12), transparent 45%),
+    radial-gradient(1000px 700px at 110% -10%, rgba(255,255,255,0.06), transparent 55%),
+    linear-gradient(var(--ink-900), var(--ink-900));
+}
+.theme-root::after{
+  content:"";
+  position: absolute; inset:0; pointer-events:none; opacity:.12; mix-blend:soft-light;
   background-image: url("data:image/svg+xml;utf8,\
   <svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 100 100'>\
     <filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/></filter>\
-    <rect width='100' height='100' filter='url(%23n)' opacity='0.35'/>\
+    <rect width='100' height='100' filter='url(%23n)' opacity='0.45'/>\
   </svg>");
 }
 
-/* Buttons & links */
-.btn-primary {
-  @apply inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold
-         text-white bg-gradient-to-r from-rose-500 to-fuchsia-600
-         hover:from-rose-400 hover:to-fuchsia-500 ring-1 ring-white/15
-         shadow-[0_10px_30px_rgba(244,63,94,0.35)] transition;
+/* Brush headline like the screenshot */
+.hero-title{
+  line-height: .9;
+  font-size: clamp(44px, 9vw, 140px);
+  color: #fff;
+  letter-spacing: 1px;
+  text-shadow:
+    0 1px 0 rgba(0,0,0,.35),
+    0 8px 24px rgba(0,0,0,.45);
 }
-.btn-ghost {
-  @apply inline-flex items-center rounded-full px-4 py-2 text-sm font-medium
-         bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-700/60 ring-1 ring-white/10 transition;
+
+/* ---- Controls ---- */
+
+.input-pill{
+  @apply w-full rounded-full text-[17px] leading-relaxed;
+  color: var(--ink-100);
+  background: transparent;
+  border: 2px solid var(--accent);
+  padding: 18px 22px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.05),
+    0 8px 24px rgba(0,0,0,.25);
 }
-.nav-link { @apply hover:text-white transition; }
+.input-pill::placeholder{ color: rgba(255,255,255,.65); }
+
+.btn-primary{
+  @apply inline-flex items-center justify-center font-semibold;
+  border-radius: 9999px;
+  padding: 14px 22px;
+  color: #111;
+  background: var(--accent);
+  border: 2px solid var(--accent);
+  transition: transform .08s ease, box-shadow .2s ease, background .15s ease;
+  box-shadow: 0 10px 24px rgba(215,225,76,.25), inset 0 0 0 1px rgba(255,255,255,.35);
+}
+.btn-primary:hover{ background: var(--accent-700); transform: translateY(-1px); }
+.btn-primary:active{ transform: translateY(0); }
+
+.btn-ghost{
+  @apply inline-flex items-center justify-center font-medium;
+  border-radius: 9999px;
+  padding: 14px 20px;
+  background: transparent;
+  color: var(--ink-100);
+  border: 2px solid rgba(255,255,255,.14);
+}
+.btn-ghost:hover{ border-color: rgba(255,255,255,.25); }
 
 /* Cards */
-.card {
-  @apply rounded-2xl ring-1 ring-white/10 bg-gradient-to-b from-zinc-900/85 to-black/70
-         shadow-[0_15px_50px_rgba(0,0,0,0.45)];
+.card{
+  background: var(--ink-800);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.35);
 }
 
-/* Media max width tweak */
-@media (min-width: 1400px) { .max-w-6xl { max-width: 70rem; } }
+/* Option tile title uses brush for attitude */
+.option-title{
+  font-family: "Rock Salt", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: clamp(22px, 2.6vw, 34px);
+  line-height: 1.05;
+}

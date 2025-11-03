@@ -1,102 +1,92 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import Replicate from "replicate";
 
 export const runtime = "nodejs";
+
+type MapEntry = { file: string; replace: string };
 
 function fail(status: number, message: string, extra: Record<string, unknown> = {}) {
   return NextResponse.json({ error: message, ...extra }, { status });
 }
 
-async function urlOk(url: string) {
+async function fetchJson<T>(url: string, fallback: T): Promise<T> {
   try {
-    const res = await fetch(url, { method: "HEAD", cache: "no-store" });
-    return res.ok;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) return fallback;
+    return (await r.json()) as T;
   } catch {
-    return false;
+    return fallback;
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { slogan } = await req.json();
-    if (!slogan || typeof slogan !== "string" || !slogan.trim()) {
-      return fail(400, "Missing 'slogan'.");
-    }
+    const { slogan, visual, file } = (await req.json()) as { slogan: string; visual: string; file?: string };
+    if (!slogan || !visual) return fail(400, "Missing 'slogan' or 'visual'.");
 
     const token = process.env.REPLICATE_API_TOKEN;
-    if (!token) return fail(500, "REPLICATE_API_TOKEN is not set.");
+    if (!token) return fail(500, "REPLICATE_API_TOKEN not set.");
 
     const modelBase = process.env.REPLICATE_MODEL || "black-forest-labs/flux-kontext-max";
-    const version = process.env.REPLICATE_VERSION; // optional
+    const version = process.env.REPLICATE_VERSION;
     const modelRef = (version ? `${modelBase}:${version}` : modelBase) as
       | `${string}/${string}`
       | `${string}/${string}:${string}`;
 
-    // folder is 'refs' in your repo
-    const refDir = path.join(process.cwd(), "public", "refs");
-    let files: string[];
-    try {
-      files = await fs.readdir(refDir);
-    } catch {
-      return fail(500, "Folder public/refs does not exist in the deployment. Create it and add images.");
-    }
-
-    const imageFiles = files.filter((f) => /\.(png|jpe?g|webp)$/i.test(f));
-    if (imageFiles.length === 0) {
-      return fail(500, "No images found in public/refs. Add .png, .jpg or .webp files.");
-    }
-
-    const choice = imageFiles[Math.floor(Math.random() * imageFiles.length)];
-
-    // Build absolute URL to the chosen image
     const proto = req.headers.get("x-forwarded-proto") || "https";
     const host = req.headers.get("host") || "localhost:3000";
-    const imageUrl = `${proto}://${host}/refs/${encodeURIComponent(choice)}`;
+    const baseUrl = `${proto}://${host}`;
 
-    const reachable = await urlOk(imageUrl);
-    if (!reachable) {
-      return fail(500, "Reference image URL is not reachable.", { imageUrl });
-    }
+    // Load the simple map
+    const mapUrl = `${baseUrl}/refs-map.json`;
+    const map = await fetchJson<MapEntry[]>(mapUrl, []);
+    if (!map.length) return fail(500, "refs-map.json missing or empty.");
 
-    const prompt = `replace text in image with "${slogan}"`;
+    // Choose entry
+    const entry = file ? map.find(m => m.file === file) || map[0] : map[Math.floor(Math.random() * map.length)];
+    if (!entry) return fail(500, "No valid entry in refs-map.json.");
 
+    const imageUrl = `${baseUrl}/refs/${encodeURIComponent(entry.file)}`;
+
+    // Single prompt
+    const prompt =
+      `Replace text in the image with "${slogan}", replace ${entry.replace} with ${visual}. ` +
+      "Keep composition natural; preserve garment texture and folds. No bevel or glow. " +
+      "Avoid faces, people, weapons, logos, or religious symbols.";
+
+    // Replicate call
     const replicate = new Replicate({ auth: token });
-
-    // Inputs per Flux Kontext Max docs
     const input = {
       prompt,
       input_image: imageUrl,
       aspect_ratio: "match_input_image",
       output_format: "jpg",
       safety_tolerance: 2,
-      prompt_upsampling: false,
+      prompt_upsampling: false
     };
-
     const output = await replicate.run(modelRef, { input });
 
-    // Coerce output into an array of URLs
     let resultImages: string[] = [];
-    if (Array.isArray(output)) {
-      resultImages = output.map((v) => (typeof v === "string" ? v : String(v)));
-    } else if (typeof output === "string") {
-      resultImages = [output];
-    } else if (output && typeof output === "object" && "output" in (output as any)) {
+    if (Array.isArray(output)) resultImages = output.map(v => (typeof v === "string" ? v : String(v)));
+    else if (typeof output === "string") resultImages = [output];
+    else if (output && typeof output === "object" && "output" in (output as any)) {
       const out = (output as any).output;
       if (Array.isArray(out)) resultImages = out.map((v: unknown) => (typeof v === "string" ? v : String(v)));
       else if (typeof out === "string") resultImages = [out];
     }
 
     if (!resultImages.length) {
-      return fail(502, "Replicate returned no images.", { modelRef, imageUrl, input });
+      return fail(502, "Replicate returned no images.", { modelRef, input });
     }
 
     return NextResponse.json({
       prompt,
       reference: imageUrl,
+      visual,
+      replace: entry.replace,
+      file: entry.file,
       result: resultImages,
-      modelRef,
+      modelRef
     });
   } catch (err) {
     console.error("render endpoint error", err);

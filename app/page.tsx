@@ -47,7 +47,6 @@ export default function Page() {
   }
 
   async function renderWithReplicate(opt: Option, file?: string, excludeFile?: string) {
-    // Immediately lock in the choice and clear others
     setChosen(opt);
     setOptions([]);
     setRendering(true);
@@ -145,8 +144,8 @@ export default function Page() {
 
       {/* Rendered result */}
       {rendered && (
-        <section className="mt-12">
-          <div className="mb-6">
+        <section className="mt-12 flex flex-col items-center">
+          <div className="mb-6 text-center">
             <h3 className="text-2xl font-semibold">Generated design</h3>
             <p className="text-sm text-white/80">
               Text: <span className="font-semibold">{chosen?.slogan}</span> · Motif:{" "}
@@ -163,14 +162,15 @@ export default function Page() {
             {rendering ? "Refreshing…" : "Refresh design"}
           </button>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          {/* image grid always centred */}
+          <div className="flex flex-wrap justify-center gap-6 w-full max-w-5xl">
             {rendered.result?.map((url, idx) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={idx}
                 src={url}
-                alt="Generated"
-                className="w-full rounded-xl border border-white/20"
+                alt="Generated design"
+                className="max-w-full md:max-w-[480px] rounded-xl border border-white/20"
               />
             ))}
           </div>

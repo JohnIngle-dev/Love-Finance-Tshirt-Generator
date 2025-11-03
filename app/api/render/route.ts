@@ -29,19 +29,20 @@ export async function POST(req: NextRequest) {
       return fail(400, "Missing 'slogan' or 'visual'.");
     }
 
-    // Validate in-code manifest
+    // Validate manifest
     const manifest: ManifestEntry[] = Array.isArray(REFS_MANIFEST) ? REFS_MANIFEST : [];
     if (!manifest.length) {
       return fail(500, "In-code manifest is empty.", {
         hint: "Edit app/api/refs-manifest.ts and add entries."
       });
     }
+
     const bad = manifest.find(m => !m?.file || !m?.replace);
     if (bad) {
       return fail(500, "Manifest entry missing 'file' or 'replace'.", { bad });
     }
 
-    // Choose entry (specific file if provided; else random)
+    // Choose entry
     const entry =
       file
         ? manifest.find(m => m.file === file) || manifest[0]
@@ -49,18 +50,18 @@ export async function POST(req: NextRequest) {
 
     if (!entry) return fail(500, "No valid entry in manifest.");
 
-    // Build absolute URL for the reference image
+    // Build image URL
     const proto = req.headers.get("x-forwarded-proto") || "https";
     const host = req.headers.get("host") || "localhost:3000";
     const baseUrl = `${proto}://${host}`;
     const imageUrl = `${baseUrl}/refs/${encodeURIComponent(entry.file)}`;
 
-    // Confirm the image is actually reachable
+    // Check reachability
     const reachable = await urlOk(imageUrl);
     if (!reachable) {
-      return fail(500, "Reference image is not reachable.", {
+      return fail(500, "Reference image not reachable.", {
         imageTried: imageUrl,
-        hint: "Ensure the file exists at public/refs/<filename-with-extension> and matches the manifest exactly (case-sensitive)."
+        hint: "Ensure the file exists at public/refs/<filename-with-extension>."
       });
     }
 
@@ -69,16 +70,13 @@ export async function POST(req: NextRequest) {
     if (!token) return fail(500, "REPLICATE_API_TOKEN not set.");
 
     const modelBase = process.env.REPLICATE_MODEL || "black-forest-labs/flux-kontext-max";
-    const version = process.env.REPLICATE_VERSION; // optional
+    const version = process.env.REPLICATE_VERSION;
     const modelRef = (version ? `${modelBase}:${version}` : modelBase) as
       | `${string}/${string}`
       | `${string}/${string}:${string}`;
 
-    // Single prompt (your desired structure)
-    const prompt =
-      `Replace text in the image with "${slogan}", replace ${entry.replace} with ${visual}. ` +
-      "Keep composition natural; preserve garment texture and folds. No bevel or glow. " +
-      "Avoid faces, people, weapons, logos, or religious symbols.";
+    // Streamlined prompt
+    const prompt = `Replace text in the image with "${slogan}", replace ${entry.replace} with ${visual}.`;
 
     // Call Replicate
     const replicate = new Replicate({ auth: token });

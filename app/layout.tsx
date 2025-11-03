@@ -6,20 +6,26 @@ const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata = {
   title: "T-Shirt Generator",
-  description: "Love Finance — Metal Merch Generator",
+  description: "Love Finance — Metal merch generator",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`min-h-screen ${inter.className} bg-[#1f1f1f] text-white`}>
-        <div className="fixed inset-0 -z-10 bg-[#1f1f1f]" />
-        <header className="pt-12 pb-8 text-center">
-          <h1 className={`${brush.className} text-6xl md:text-8xl text-white leading-none`}>
-            T-SHIRT<br />GENERATOR
-          </h1>
+    <html lang="en" className="h-full">
+      <body
+        className={`${inter.className} min-h-screen bg-[#1f1f1f] text-white flex flex-col`}
+      >
+        {/* HERO HEADER (centred) */}
+        <header className="w-full flex justify-center pt-10 pb-6">
+          <div className="w-full max-w-5xl px-6 text-center">
+            <h1 className={`${brush.className} leading-none text-white text-[10vw] md:text-[7rem]`}>
+              T-SHIRT<br />GENERATOR
+            </h1>
+          </div>
         </header>
-        {children}
+
+        {/* MAIN CONTENT (always centred) */}
+        <main className="w-full flex-1 flex justify-center">{children}</main>
       </body>
     </html>
   );

@@ -77,58 +77,70 @@ export default function Page() {
   }
 
   return (
-    <main className="flex flex-col items-center justify-center w-full px-6 pb-20 text-center">
-      {/* Input */}
-      <section className="max-w-2xl w-full">
-        <p className="mb-4 text-lg">What do you love about finance?</p>
-        <form onSubmit={getOptions} className="flex flex-col gap-4 items-center">
+    <div className="w-full max-w-5xl px-6 pb-20 flex flex-col items-center text-center">
+      {/* INPUT BLOCK */}
+      <section className="w-full max-w-3xl">
+        <p className="mb-3 text-white">What do you love about finance?</p>
+
+        <form onSubmit={getOptions} className="flex flex-col items-center gap-4">
           <textarea
-            className="input-pill"
+            className="w-full text-white bg-transparent placeholder-white/70 rounded-full border-2 border-[#d7e14c] px-6 py-4 text-lg focus:outline-none focus:ring-0"
             placeholder="e.g. compounding, clean books, cashflow control…"
             value={love}
             onChange={(e) => setLove(e.target.value)}
             rows={3}
             required
           />
-          <div className="flex gap-3">
-            <button type="submit" disabled={loading} className="btn-primary">
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-full bg-[#d7e14c] text-black font-semibold px-6 py-3"
+            >
               {loading ? "Generating…" : "Get 3 options"}
             </button>
             <button
               type="button"
-              onClick={() => { setLove(""); setOptions([]); setRendered(null); setErr(null); setChosen(null); }}
-              className="btn-ghost"
+              onClick={() => {
+                setLove("");
+                setOptions([]);
+                setRendered(null);
+                setErr(null);
+                setChosen(null);
+              }}
+              className="rounded-full border-2 border-white/40 px-6 py-3"
             >
               Reset
             </button>
           </div>
         </form>
-        {err && <div className="mt-4 text-red-400 text-sm">{err}</div>}
+
+        {err && <div className="mt-4 text-sm text-red-300">{err}</div>}
       </section>
 
-      {/* Options */}
+      {/* OPTIONS (centred grid) */}
       {!rendered && options.length === 3 && (
-        <section className="mt-10 grid gap-6 w-full max-w-4xl text-center md:grid-cols-3">
+        <section className="w-full max-w-5xl mt-10 grid gap-6 md:grid-cols-3">
           {options.map((o, i) => (
             <button
               key={i}
               onClick={() => renderWithReplicate(o)}
               disabled={rendering}
-              className="card hover:border-[#d7e14c]/70 transition"
+              className="rounded-2xl border border-white/20 bg-[#2a2a2a] px-6 py-6 hover:border-white transition text-left md:text-center"
             >
-              <div className="option-title">{o.slogan}</div>
-              <div className="mt-3 text-sm text-white/70 uppercase">Motif</div>
+              <div className="text-white text-2xl font-semibold leading-tight">{o.slogan}</div>
+              <div className="mt-3 text-xs uppercase tracking-widest text-white/70">Motif</div>
               <div className="text-sm text-white/90">{o.visual}</div>
             </button>
           ))}
         </section>
       )}
 
-      {/* Result */}
+      {/* RESULT (centred) */}
       {rendered && (
-        <section className="mt-12 w-full max-w-5xl">
+        <section className="w-full max-w-5xl mt-12">
           <div className="mb-6">
-            <h3 className="text-2xl font-semibold mb-1">Generated design</h3>
+            <h3 className="text-2xl font-semibold">Generated design</h3>
             <p className="text-sm text-white/80">
               Text: <span className="font-semibold">{chosen?.slogan}</span> · Motif:{" "}
               <span className="font-semibold">{rendered.visual}</span>
@@ -139,7 +151,7 @@ export default function Page() {
             type="button"
             onClick={refreshDifferentRef}
             disabled={rendering || !chosen}
-            className="btn-primary mb-6"
+            className="rounded-full bg-[#d7e14c] text-black font-semibold px-6 py-3 mb-6"
           >
             {rendering ? "Refreshing…" : "Refresh design"}
           </button>
@@ -147,11 +159,16 @@ export default function Page() {
           <div className="grid gap-6 md:grid-cols-2">
             {rendered.result?.map((url, idx) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={idx} src={url} alt="Generated" className="w-full rounded-xl border border-white/20" />
+              <img
+                key={idx}
+                src={url}
+                alt="Generated"
+                className="w-full rounded-xl border border-white/20"
+              />
             ))}
           </div>
         </section>
       )}
-    </main>
+    </div>
   );
 }

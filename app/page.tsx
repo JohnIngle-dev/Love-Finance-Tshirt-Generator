@@ -153,17 +153,8 @@ export default function Page() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={refreshDifferentRef}
-            disabled={rendering || !chosen}
-            className="btn-primary mb-6"
-          >
-            {rendering ? "Refreshing…" : "Refresh design"}
-          </button>
-
-          {/* image grid always centred */}
-          <div className="flex flex-wrap justify-center gap-6 w-full max-w-5xl">
+          {/* Centred image grid */}
+          <div className="flex flex-wrap justify-center gap-6 w-full max-w-5xl mb-8">
             {rendered.result?.map((url, idx) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -174,6 +165,16 @@ export default function Page() {
               />
             ))}
           </div>
+
+          {/* Refresh button now below images */}
+          <button
+            type="button"
+            onClick={refreshDifferentRef}
+            disabled={rendering || !chosen}
+            className="btn-primary"
+          >
+            {rendering ? "Refreshing…" : "Refresh design"}
+          </button>
         </section>
       )}
     </div>

@@ -3,24 +3,19 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  project: process.env.OPENAI_PROJECT_ID, // <- pick up your Project ID if set
+  project: process.env.OPENAI_PROJECT_ID, // optional, but you said you have one
 });
 
 function coerceJsonArray(input: string): string[] {
   if (!input) return [];
-  // strip code fences if any
   const cleaned = input
     .replace(/```json/gi, "```")
     .replace(/```/g, "")
     .trim();
-
-  // try JSON first
   try {
     const parsed = JSON.parse(cleaned);
     if (Array.isArray(parsed)) return parsed.filter(s => typeof s === "string");
   } catch {}
-
-  // fallback: split lines -> 1–4 words only
   return cleaned
     .split(/\r?\n/)
     .map(s => s.replace(/^\d+[\.)-]\s*/, "").trim())
@@ -37,20 +32,20 @@ export async function POST(req: NextRequest) {
     }
 
     const system =
-      "You are a copywriter for rock/metal-style t-shirts. " +
+      "You are the lead singer of a metal band writing t-shirt slogans. " +
       "Only produce safe, clean content: strictly avoid profanity, slurs, hate, sexual content, or harassment. " +
       "Each slogan must be 1–4 words, no emojis, no numbering. " +
       "Return ONLY a JSON array of strings.";
 
     const user =
-      `User loves this about finance: “${love}”. ` +
-      "Write 12 rock/metal-style t-shirt slogans that celebrate it. " +
-      "Avoid clichés like 'to the moon'. Return JSON array only.";
+      `The fan loves this about finance: “${love}”. ` +
+      "Write EXACTLY 3 metal-style slogans that celebrate it. " +
+      "Lean into aggression, grit, and stage-command energy; avoid clichés like 'to the moon'. " +
+      "Return JSON array only.";
 
-    // Use Chat Completions for consistent shape
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.8,
+      temperature: 0.9,
       messages: [
         { role: "system", content: system },
         { role: "user", content: user }
@@ -58,35 +53,26 @@ export async function POST(req: NextRequest) {
     });
 
     let content = completion.choices?.[0]?.message?.content ?? "";
-
-    // If the model ignored the JSON instruction, repair it with a second pass
     let ideas = coerceJsonArray(content);
 
-    if (!ideas.length) {
+    if (ideas.length !== 3) {
       const fixer = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         temperature: 0,
         messages: [
-          { role: "system", content: "Convert the user content into a JSON array of 1–4 word clean slogans. Output JSON only." },
+          { role: "system", content: "Return EXACTLY 3 items as a JSON array of strings. Each item 1–4 words, clean language." },
           { role: "user", content },
         ],
       });
       content = fixer.choices?.[0]?.message?.content ?? "";
-      ideas = coerceJsonArray(content);
+      ideas = coerceJsonArray(content).slice(0, 3);
     }
 
-    // final tidy: cap at 12 and dedupe (case-insensitive)
-    const seen = new Set<string>();
-    const out = ideas
-      .map(s => s.trim())
-      .filter(s => s && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase()))
-      .slice(0, 12);
-
-    if (!out.length) {
+    if (!ideas.length) {
       return NextResponse.json({ error: "No slogans generated." }, { status: 422 });
     }
 
-    return NextResponse.json({ slogans: out });
+    return NextResponse.json({ slogans: ideas.slice(0, 3) });
   } catch (err) {
     console.error("slogans endpoint error", err);
     return NextResponse.json({ error: "Failed to generate slogans." }, { status: 500 });

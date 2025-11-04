@@ -1,39 +1,19 @@
-// app/api/render/route.ts
 import { NextResponse } from "next/server";
 import path from "path";
 import fs from "fs/promises";
 import Replicate from "replicate";
+import { REFS_MANIFEST, type ManifestEntry } from "./refs-manifest";
 
 export const runtime = "nodejs";
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Manifest: add/adjust entries here. Keyed by filename inside /public/refs.
-// Each entry must include:
-//   - replace: what visual element to swap out
-//   - keep: what must be preserved in the image
-// You can add as many as you like; unlisted files will use the DEFAULT_ENTRY.
-// ───────────────────────────────────────────────────────────────────────────────
-type ManifestEntry = { replace: string; keep: string };
-const MANIFEST: Record<string, ManifestEntry> = {
-  // EXAMPLES — edit to match the actual files in /public/refs
-  // "tee_star.png":       { replace: "the centre star emblem", keep: "the shirt, fabric texture, lighting and background" },
-  // "tee_badge.jpg":      { replace: "the chest badge graphic", keep: "the shirt, seams, fabric folds, background" },
-  // "tee_skull.png":      { replace: "the skull motif", keep: "the shirt, perspective, fabric detail, background" },
-  // "tee_circle.png":     { replace: "the circular logo", keep: "the shirt, colour, lighting and background" },
-};
-
-// Sensible fallback if a file isn't listed in MANIFEST yet
 const DEFAULT_ENTRY: ManifestEntry = {
   replace: "the main graphic",
   keep: "the shirt, fabric texture, folds, colours, lighting and background",
 };
 
-// Utility: get manifest entry for file or fallback
 function getEntryForFile(file: string): ManifestEntry {
-  return MANIFEST[file] ?? DEFAULT_ENTRY;
+  return REFS_MANIFEST[file] ?? DEFAULT_ENTRY;
 }
-
-// Build the public URL for a ref image in /public/refs
 function refUrl(baseUrl: string, file: string) {
   return `${baseUrl}/refs/${encodeURIComponent(file)}`;
 }
@@ -41,7 +21,6 @@ function refUrl(baseUrl: string, file: string) {
 export async function POST(req: Request) {
   try {
     const { slogan, visual, file, excludeFile } = await req.json();
-
     if (!slogan || !visual) {
       return NextResponse.json(
         { error: "Missing required fields: slogan and visual" },
@@ -49,12 +28,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Resolve deployment base URL
     const proto = (req.headers as any).get("x-forwarded-proto") || "https";
     const host = (req.headers as any).get("host") || "localhost:3000";
     const baseUrl = `${proto}://${host}`;
 
-    // Resolve available reference images
     const refsDir = path.join(process.cwd(), "public", "refs");
     let files = await fs.readdir(refsDir).catch(() => []);
     files = files.filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f));
@@ -66,9 +43,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Pick the file to use:
-    //  - if client specified a file and it's present, use it
-    //  - otherwise pick randomly (excluding excludeFile, if provided)
+    // choose the reference file
     let chosen = file && files.includes(file) ? file : undefined;
     if (!chosen) {
       const pool = excludeFile ? files.filter((f) => f !== excludeFile) : files;
@@ -77,10 +52,9 @@ export async function POST(req: Request) {
 
     const entry = getEntryForFile(chosen!);
 
-    // Your requested prompt structure
+    // Your requested prompt structure:
     const prompt = `Replace text in the image with "${slogan}", replace ${entry.replace} with ${visual}, keep ${entry.keep}.`;
 
-    // Prepare Replicate input
     const input = {
       prompt,
       input_image: refUrl(baseUrl, chosen!),
@@ -96,8 +70,10 @@ export async function POST(req: Request) {
 
     const model = "black-forest-labs/flux-kontext-max";
     const output = await replicate.run(model as `${string}/${string}`, { input });
-
     const resultImages = Array.isArray(output) ? output : [output];
+
+    // Include debug so you can verify whether we hit the manifest or fallback
+    const usedFallback = REFS_MANIFEST[chosen!] ? false : true;
 
     return NextResponse.json({
       prompt,
@@ -108,6 +84,7 @@ export async function POST(req: Request) {
       file: chosen,
       result: resultImages,
       modelRef: model,
+      debug: { chosen, usedFallback, knownKeys: Object.keys(REFS_MANIFEST) },
     });
   } catch (e: any) {
     return NextResponse.json(

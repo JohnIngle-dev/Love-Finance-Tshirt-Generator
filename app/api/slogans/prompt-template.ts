@@ -1,34 +1,41 @@
 export const SLOGAN_PROMPT = `
-You are creating three short, metal-style slogans and one clear visual motif for each,
+You create three short, metal-style slogans and a clear, depictable visual motif for each,
 based on what the user loves about finance.
 
-OUTPUT FORMAT (JSON array only — no prose):
+OUTPUT FORMAT — JSON array ONLY (no prose):
 [
-  { "slogan": "SLOGAN 1", "visual": "VISUAL 1" },
-  { "slogan": "SLOGAN 2", "visual": "VISUAL 2" },
-  { "slogan": "SLOGAN 3", "visual": "VISUAL 3" }
+  { "slogan": "SLOGAN 1", "visual": "OBJECT (constraints), OBJECT (constraints), OBJECT (constraints)" },
+  { "slogan": "SLOGAN 2", "visual": "..." },
+  { "slogan": "SLOGAN 3", "visual": "..." }
 ]
 
 REQUIREMENTS
-- Count: exactly 3 options.
-- Slogan: 1–4 words, bold metal energy, rockstar, don't give a fuck, attitude, cool, poetic or metaphorical is fine.
-- Motif: one concrete, visually obvious subject, easy to depict on a T-shirt.
+- Exactly 3 options.
+- Slogan: 1–4 words, metal energy; no quotes/emojis/hashtags.
+- Motif: 1–3 concrete OBJECTS, comma-separated. Each OBJECT MUST include constraints in parentheses.
 
-MOTIF CLARITY RULES (very important)
-- If you use charts: use ONLY a **3D bar chart** (never pie/line/area/candles). Make it visually exciting (e.g. molten steel bars, neon glass bars, grave stone bars).
-- Allowed imagery can be anything that fits the slogan AND evokes accounting/finance either directly or metaphorically (e.g. ledgers, recipts, computers, credit cards, bank notes, abacus, vaults or safes, coins, calculators, servers, cogs).
-- The motif must be a single clear subject, optionally with a brief texture/energy adjective.
-- Use generic objects: 
-  - coins/notes/cash with **no symbols, no writing, no currency marks**,
-  - calculators/computers **without numbers or text**,
-  - images should be explicit: e.g. "open vault with coins flying out".
-- No logos, trademarks, real text, or readable numbers.
-- Keep it short: ideally 2–6 words for "visual".
+DISAMBIGUATION (VERY IMPORTANT)
+- Never use the word "bars" by itself.
+- If you mean METAL INGOTS: write **"3D bullion ingots (…material/energy…)"**.
+- If you mean a CHART: write **"3D [TYPE] chart (…material/energy…)"** and name the type explicitly
+  (bar, line, area, candlestick, etc.). Include a short descriptor like "(molten steel)", "(neon glass)".
+- Vaults must explicitly state what emerges, e.g.
+  - "Open vault (3D bullion ingots spilling out)" or
+  - "Open vault (3D bar chart emerging)" or
+  - "Open vault (plain coins, no symbols)".
+- Every object must be unambiguous and easy to depict on a T-shirt.
 
-SAFETY / TONE
-- Metal vibe is welcome (skulls, fire, chains, storms), but avoid explicit gore, hate, sexual content, or real-world violence.
-- No slurs, no politics, no religion.
+GENERIC OBJECT RULES
+- Use generic items only; no readable text, numbers, logos or symbols.
+  - Coins/notes: **"plain coins (no symbols)"**, **"plain notes (no symbols or text)"**.
+  - Calculators/computers/screens/displays: **"(no numbers or text)"**.
+  - Ledgers/books: **"(no text)"**.
+  - Compass: **"(no numbers or letters)"**.
+- Imagery may be metaphorical but must be visually obvious (e.g. recipts, computers, credit cards, bank notes, abacus, vaults or safes, coins, calculators, servers, cogs).
 
-USER INPUT (what they love about finance):
+SAFETY
+- No slurs, explicit gore, sexual content, real-world violence, politics, or religion.
+
+USER INPUT:
 "{{love}}"
 `;

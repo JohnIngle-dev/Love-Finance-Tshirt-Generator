@@ -1,36 +1,40 @@
-// app/api/selectRef/route.ts
 import { NextResponse } from "next/server";
-import fs from "node:fs";
-import path from "node:path";
+import path from "path";
+import fs from "fs/promises";
+import { REFS_MANIFEST } from "../render/refs-manifest";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export const revalidate = 0;           // no ISR cache
 
 export async function GET(req: Request) {
-  // Disable all caching at the edge/CDN level
-  const headers = {
-    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-  };
+  const proto = (req.headers as any).get("x-forwarded-proto") || "https";
+  const host = (req.headers as any).get("host") || "localhost:3000";
+  const baseUrl = `${proto}://${host}`;
 
   const refsDir = path.join(process.cwd(), "public", "refs");
-  const files = fs.readdirSync(refsDir).filter(f =>
-    /\.(png|jpg|jpeg|webp)$/i.test(f)
-  );
+  try {
+    let files = await fs.readdir(refsDir);
+    files = files.filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f));
 
-  if (!files.length) {
-    return NextResponse.json({ error: "No refs found in /public/refs" }, { status: 404, headers });
+    const items = files.map((f) => ({
+      file: f,
+      url: `${baseUrl}/refs/${encodeURIComponent(f)}`,
+      inManifest: Boolean(REFS_MANIFEST[f]),
+      manifestSnippet: REFS_MANIFEST[f]
+        ? undefined
+        : `"${f}": { replace: "the main graphic", keep: "the shirt, fabric texture, folds, colours, lighting and background" }`,
+    }));
+
+    return NextResponse.json({
+      count: items.length,
+      manifestKeys: Object.keys(REFS_MANIFEST),
+      missingInManifest: items.filter((i) => !i.inManifest).map((i) => i.file),
+      items,
+      tip: "Copy any missing filenames and add them to app/api/render/refs-manifest.ts",
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e?.message || e || "Failed to read /public/refs" },
+      { status: 500 }
+    );
   }
-
-  // true random pick on each request
-  const pick = files[Math.floor(Math.random() * files.length)];
-
-  // Use NEXT_PUBLIC_SITE_URL in prod; fall back to request host in dev
-  const urlBase =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    new URL(req.url).origin;
-
-  const url = `${urlBase}/refs/${encodeURIComponent(pick)}`;
-
-  return NextResponse.json({ url, filename: pick }, { headers });
 }

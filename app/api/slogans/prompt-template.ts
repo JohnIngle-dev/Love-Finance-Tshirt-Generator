@@ -16,12 +16,10 @@ REQUIREMENTS
 
 DISAMBIGUATION (VERY IMPORTANT)
 - Never use the word "bars" by itself.
-- If you mean METAL INGOTS: write **"3D bullion ingots (…material/energy…)"**.
-- If you mean a CHART: write **"3D [TYPE] chart (…material/energy…)"** and name the type explicitly
-  (bar, line, area, candlestick, etc.). Include a short descriptor like "(molten steel)", "(neon glass)".
-- Vaults must explicitly state what emerges, e.g.
-  - "Open vault (3D bullion ingots spilling out)" or
-  - "Open vault (3D bar chart emerging)" or
+- METAL INGOTS: write **"3D bullion ingots (…material/energy…)"**.
+- CHARTS: write **"3D [TYPE] chart (…material/energy…)"**, type named explicitly (bar, line, area, candlestick, etc.).
+- Vaults MUST state what emerges, e.g.
+  - "Open vault (3D bullion ingots spilling out)" OR
   - "Open vault (plain coins, no symbols)".
 - Every object must be unambiguous and easy to depict on a T-shirt.
 
@@ -31,7 +29,18 @@ GENERIC OBJECT RULES
   - Calculators/computers/screens/displays: **"(no numbers or text)"**.
   - Ledgers/books: **"(no text)"**.
   - Compass: **"(no numbers or letters)"**.
-- Imagery may be metaphorical but must be visually obvious (e.g. recipts, computers, credit cards, bank notes, abacus, vaults or safes, coins, calculators, servers, cogs).
+
+MIRROR THE SLOGAN (CRITICAL)
+- If the slogan explicitly mentions a finance item/visual, INCLUDE THAT SAME ITEM in the motif with correct constraints.
+  Example mappings:
+  - “vault” → include **Open vault (…explicit contents…)**
+  - “chart / bar chart / graph” → include **3D [TYPE] chart (…material/energy…)**
+  - “coins / cash / notes / dollars” → **plain coins (no symbols)** or **plain notes (no symbols or text)**
+  - recipets / book / spreadsheet” → **recipets (no text)** or **spreadsheet grid (no text)**
+  - “calculator / computer / server / screen” → **(no numbers or text)**
+  - “compass” → **(no numbers or letters)**
+  - “safe” → **open safe (generic, no text, explicit contents)** OR **open vault (…explicit contents… )**
+- Imagery may be metaphorical but must still be visually obvious and finance-adjacent.
 
 SAFETY
 - No slurs, explicit gore, sexual content, real-world violence, politics, or religion.

@@ -16,7 +16,13 @@ export const REFS_MANIFEST: Record<string, ManifestEntry> = {
 "490757356_18072793927870705_5264794875672410706_n.png": {replace: "golden dragon", keep: "samurai and energy blade motif"},
 "483086357_18068930341870705_8434049462797539537_n.png": {replace: "skull", keep: "barbed wire"},
 "477528558_18067213492870705_5202122066376182871_n.png": {replace: "person and guns", keep: "barbed wire and lightning"},
-"476075948_18066024388870705_4787732589082743204_n.png": {replace: "globe", keep: "sword-like shape, electric energy, and skeletal form"},
+"469429856_3563671997263887_6273377183839423273_n.png": {replace: "globe", keep: "green dragon"},
+"464219090_859263849729134_4970671754337849920_n.png": {replace: "flag", keep: "people"},
+"339157317_579786897547977_2609644628084502931_n.png": {replace: "skull", keep: "green cobra snake, lighning and money"},
+"294249437_119614124127622_7952573169032721357_n.png": {replace: "crab", keep: "skull and corbra snake"},
+"452993072_1024825052182718_8869521735497110356_n.png": {replace: "person", keep: "blue lighnitng"},
+"447978241_1462976974607361_4526319763357150234_n.png": {replace: "spikes and chain", keep: "skull"},
+"466365079_920085766701610_882648000067426479_n.png": {replace: "red mushrooms", keep: "skull"},
   
 };
 

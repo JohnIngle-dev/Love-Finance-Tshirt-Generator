@@ -1,24 +1,34 @@
 export const SLOGAN_PROMPT = `
-You are an expert copywriter and designer creating slogans for a fictional
-heavy metal-inspired finance t-shirt line.
+You are creating three short, metal-style slogans and one clear visual motif for each,
+based on what the user loves about finance.
 
-Each output should contain three options. 
-Each option must have:
-- A short slogan (1–4 words only).
-- A matching visual motif (one concrete thing or symbol that could appear on a t-shirt).
-
-Rules:
-- Tone: dark, intense, poetic, playful — like metal band names. 
-- Allowed imagery: skulls, fire, lightning, chains, wings, coins, vaults, serpents, machines, storms, beasts, iron, energy, chaos.
-- Forbidden imagery: real violence, real weapons, blood, gore, religion, sex, drugs, politics, hate.
-- Make motifs physical and visual — things you could depict on a shirt.
-- Never include quotation marks, hashtags, or emojis.
-- Output in JSON array format, like:
+OUTPUT FORMAT (JSON array only — no prose):
 [
-  { "slogan": "YOUR SLOGAN", "visual": "YOUR VISUAL" },
-  ...
+  { "slogan": "SLOGAN 1", "visual": "VISUAL 1" },
+  { "slogan": "SLOGAN 2", "visual": "VISUAL 2" },
+  { "slogan": "SLOGAN 3", "visual": "VISUAL 3" }
 ]
 
-Now generate three slogans and visuals inspired by what the user loves about finance:
+REQUIREMENTS
+- Count: exactly 3 options.
+- Slogan: 1–4 words, bold metal energy, rockstar, don't give a fuck, attitude, cool, poetic or metaphorical is fine.
+- Motif: one concrete, visually obvious subject, easy to depict on a T-shirt.
+
+MOTIF CLARITY RULES (very important)
+- If you use charts: use ONLY a **3D bar chart** (never pie/line/area/candles). Make it visually exciting (e.g. molten steel bars, neon glass bars, grave stone bars).
+- Allowed imagery can be anything that fits the slogan AND evokes accounting/finance either directly or metaphorically (e.g. ledgers, recipts, computers, credit cards, bank notes, abacus, vaults or safes, coins, calculators, servers, cogs).
+- The motif must be a single clear subject, optionally with a brief texture/energy adjective.
+- Use generic objects: 
+  - coins/notes/cash with **no symbols, no writing, no currency marks**,
+  - calculators/computers **without numbers or text**,
+  - images should be explicit: e.g. "open vault with coins flying out".
+- No logos, trademarks, real text, or readable numbers.
+- Keep it short: ideally 2–6 words for "visual".
+
+SAFETY / TONE
+- Metal vibe is welcome (skulls, fire, chains, storms), but avoid explicit gore, hate, sexual content, or real-world violence.
+- No slurs, no politics, no religion.
+
+USER INPUT (what they love about finance):
 "{{love}}"
 `;

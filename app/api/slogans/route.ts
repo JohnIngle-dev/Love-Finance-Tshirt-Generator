@@ -6,31 +6,49 @@ export const runtime = "nodejs";
 
 type Option = { slogan: string; visual: string };
 
-/** ── TUNABLE DEFAULTS (no logic changes needed) ───────────────────────────── */
+/** Tunable defaults */
 const CONFIG = {
-  defaultChartType: "bar",             // "bar" | "line" | "area" | "candlestick"
-  defaultChartMaterial: "molten steel",
-  defaultIngotMaterial: "brushed metal",
+  defaultChartType: "bar",          // "bar" | "line" | "area" | "candlestick"
+  defaultChartMaterial: "neon glass",
+  defaultIngotMaterial: "brushed metal"
 };
 
-/** ── Helpers ──────────────────────────────────────────────────────────────── */
-function tidy(s: string) {
-  return s.replace(/[“”"’‘]+/g, "").replace(/\s{2,}/g, " ").trim();
+/* ─── tiny helpers ─────────────────────────────────────────────── */
+const tidy = (s: string) => s.replace(/[“”"’‘]+/g, "").replace(/\s{2,}/g, " ").trim();
+const cap  = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+/* ─── step 1: mirror obvious finance cues from the slogan ──────── */
+function mirrorFinanceCue(slogan: string, visual: string) {
+  const s = slogan.toLowerCase();
+  const has = (re: RegExp) => re.test(visual.toLowerCase());
+
+  const inserts: { test: RegExp; token: string }[] = [
+    { test: /\bvault|safe\b/,                 token: "Open vault" },
+    { test: /\bchart|graph\b/,                token: `3D ${CONFIG.defaultChartType} chart (${CONFIG.defaultChartMaterial})` },
+    { test: /\bcoins?\b/,                     token: "Plain coins (no symbols)" },
+    { test: /\bnotes?|cash|bills?\b/,         token: "Plain notes (no symbols or text)" },
+    { test: /\bledger|book|spreadsheet\b/,    token: "Ledger (no text)" },
+    { test: /\bcalculator\b/,                 token: "Calculator (no numbers or text)" },
+    { test: /\bcomputer|server|screen\b/,     token: "Computer (no numbers or text)" },
+    { test: /\bcompass\b/,                    token: "Compass (no numbers or letters)" },
+    { test: /\bcrown\b/,                      token: "Crown (gold)" }
+  ];
+
+  const tokens = visual.split(",").map(tidy).filter(Boolean);
+  for (const rule of inserts) {
+    if (rule.test.test(s) && !has(rule.test)) {
+      tokens.unshift(rule.token);
+      break; // only enforce the first matching finance cue
+    }
+  }
+  return tokens.slice(0, 2).join(", ");
 }
 
-function cap(s: string) {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-}
-
-/** Normalise one object token like:
- *  "Open vault (bars pouring out)" →
- *  "Open vault (3D bullion ingots spilling out)" OR
- *  "Open vault (3D bar chart emerging)"
- */
+/* ─── step 2: keep motifs concise but unambiguous ──────────────── */
 function normaliseObjectToken(token: string, contextHasChart: boolean): string {
   let t = tidy(token.toLowerCase());
 
-  // Standardise common synonyms around charts and currency
+  // standard synonyms
   t = t
     .replace(/\bdollars?\b/g, "plain coins")
     .replace(/\bpounds?\b/g, "plain coins")
@@ -44,61 +62,47 @@ function normaliseObjectToken(token: string, contextHasChart: boolean): string {
   let base = tidy(m ? m[1] : t);
   let constraint = tidy(m && m[3] ? m[3] : "");
 
-  const mentionsChart =
-    /\bchart\b/.test(base) || /\bchart\b/.test(constraint);
-  const mentionsBars =
-    /\bbars\b/.test(base) || /\bbars\b/.test(constraint);
-  const mentionsVault = /\bvault\b/.test(base);
+  const mentionsChart = /\bchart\b/.test(base) || /\bchart\b/.test(constraint);
+  const mentionsBars  = /\bbars\b/.test(base) || /\bbars\b/.test(constraint);
+  const mentionsVault = /\bvault\b/.test(base) || /\bsafe\b/.test(base);
 
-  // If "bars" is used without chart context → treat as ingots
+  // If "bars" without chart → interpret as bullion ingots
   if (mentionsBars && !mentionsChart) {
     base = base.replace(/\bbars\b/g, "bullion ingots");
     constraint = constraint.replace(/\bbars\b/g, "bullion ingots");
   }
 
-  // CHARTS: require explicit type and 3D
+  // CHARTS: explicit type + 3D + short material
   if (mentionsChart || (contextHasChart && mentionsBars)) {
-    // force explicit chart type if missing
     if (!/\b(bar|line|area|candlestick)\s*chart\b/.test(base)) {
       base = base.replace(/\bchart\b/g, `${CONFIG.defaultChartType} chart`);
     }
-    // add "3D" prefix if missing
     if (!/\b3d\b/.test(base)) base = `3d ${base}`;
-    // material if missing
     if (!constraint) constraint = CONFIG.defaultChartMaterial;
   }
 
-  // BULLION INGOTS: require "3D bullion ingots"
+  // INGOTS: explicit 3D + short material
   if (/\bbullion ingots\b/.test(base)) {
     if (!/\b3d\b/.test(base)) base = `3d ${base}`;
     if (!constraint) constraint = CONFIG.defaultIngotMaterial;
   }
 
-  // Vaults must say what emerges explicitly
+  // Vaults / Safe: state contents simply if hinted
   if (mentionsVault) {
-    const talksChart =
-      /\bchart\b/.test(base) || /\bchart\b/.test(constraint);
-    const talksIngots =
-      /\bbullion ingots\b/.test(base) || /\bbullion ingots\b/.test(constraint);
-    const talksCoins = /\bplain coins\b/.test(base) || /\bplain coins\b/.test(constraint);
-    const talksNotes = /\bplain notes\b/.test(base) || /\bplain notes\b/.test(constraint);
+    const talksChart  = /\bchart\b/.test(base) || /\bchart\b/.test(constraint);
+    const talksIngots = /\bbullion ingots\b/.test(base) || /\bbullion ingots\b/.test(constraint);
+    const talksCoins  = /\bplain coins\b/.test(base) || /\bplain coins\b/.test(constraint);
+    const talksNotes  = /\bplain notes\b/.test(base) || /\bplain notes\b/.test(constraint);
 
-    base = "open vault";
-    if (talksChart) {
-      constraint = `3D ${CONFIG.defaultChartType} chart emerging`;
-    } else if (talksIngots) {
-      constraint = "3D bullion ingots spilling out";
-    } else if (talksCoins) {
-      constraint = "plain coins (no symbols) spilling out";
-    } else if (talksNotes) {
-      constraint = "plain notes (no symbols or text) spilling out";
-    } else {
-      // default to ingots if unspecified
-      constraint = "3D bullion ingots spilling out";
-    }
+    base = /safe/.test(base) ? "open safe" : "open vault";
+    if (talksChart)       constraint = `3D ${CONFIG.defaultChartType} chart emerging`;
+    else if (talksIngots) constraint = "3D bullion ingots spilling out";
+    else if (talksCoins)  constraint = "plain coins (no symbols) spilling out";
+    else if (talksNotes)  constraint = "plain notes (no symbols or text) spilling out";
+    else                  constraint = "generic, no text";
   }
 
-  // Per-object constraints
+  // Minimal necessary constraints
   if (/\bcompass\b/.test(base) && !/no numbers|no letters/i.test(constraint)) {
     constraint = "no numbers or letters";
   }
@@ -108,50 +112,40 @@ function normaliseObjectToken(token: string, contextHasChart: boolean): string {
   if (/\bplain notes\b/.test(base) && !/no symbols|no text/i.test(constraint)) {
     constraint = "no symbols or text";
   }
-  if (/\b(calculator|computer|screen|display)\b/.test(base) && !/no numbers|no text/i.test(constraint)) {
+  if (/\b(calculator|computer|server|screen|display)\b/.test(base) && !/no numbers|no text/i.test(constraint)) {
     constraint = "no numbers or text";
   }
   if (/\bledger\b/.test(base) && !/no text/i.test(constraint)) {
     constraint = "no text";
   }
 
-  // Generic fallback to be safe
+  // Keep short; if still empty, leave generic and brief
   if (!constraint) constraint = "generic, no text";
 
   return `${cap(base)} (${cap(constraint)})`;
 }
 
 function normaliseVisual(visual: string): string {
-  const rawParts = visual
-    .split(",")
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .slice(0, 3);
+  const raw = visual.split(",").map((p) => tidy(p)).filter(Boolean).slice(0, 2);
+  if (raw.length === 0) return `3D ${CONFIG.defaultChartType} chart (${cap(CONFIG.defaultChartMaterial)})`;
 
-  if (rawParts.length === 0) {
-    // sensible default
-    return `3D ${CONFIG.defaultChartType} chart (${cap(CONFIG.defaultChartMaterial)})`;
-  }
+  const contextHasChart = raw.some((p) => /\bchart\b/i.test(p));
+  const fixed = raw.map((p) => normaliseObjectToken(p, contextHasChart));
 
-  const contextHasChart = rawParts.some((p) => /\bchart\b/i.test(p));
-  const fixed = rawParts.map((p) => normaliseObjectToken(p, contextHasChart));
-
-  // Ensure any chart comes first for clarity, limit to 3 items
+  // Put chart first if present
   const charts = fixed.filter((p) => /\b3d\b.*\bchart\b/i.test(p));
-  const nonCharts = fixed.filter((p) => !/\b3d\b.*\bchart\b/i.test(p));
-  const ordered = (charts.length ? [charts[0]] : []).concat(nonCharts).slice(0, 3);
+  const non    = fixed.filter((p) => !/\b3d\b.*\bchart\b/i.test(p));
+  const ordered = (charts.length ? [charts[0]] : []).concat(non).slice(0, 2);
 
-  // Final sweep: never leave bare "bars"
-  const unambiguous = ordered.map((p) =>
+  // Never leave bare "bars"
+  return ordered.map((p) =>
     /\bbars\b/i.test(p) && !/\bchart\b|\bbullion ingots\b/i.test(p)
       ? p.replace(/\bbars\b/gi, "bullion ingots")
       : p
-  );
-
-  return unambiguous.join(", ");
+  ).join(", ");
 }
 
-/** ── Route ────────────────────────────────────────────────────────────────── */
+/* ─── route ─────────────────────────────────────────────────────── */
 export async function POST(req: Request) {
   try {
     const { love } = await req.json();
@@ -164,8 +158,8 @@ export async function POST(req: Request) {
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 1.0,
-      messages: [{ role: "user", content: prompt }],
+      temperature: 0.9,
+      messages: [{ role: "user", content: prompt }]
     });
 
     const raw = completion.choices[0]?.message?.content?.trim() || "[]";
@@ -179,10 +173,11 @@ export async function POST(req: Request) {
     }
 
     options = (options || [])
-      .filter((o) => o && typeof o.slogan === "string" && typeof o.visual === "string")
-      .map((o) => {
+      .filter(o => o && typeof o.slogan === "string" && typeof o.visual === "string")
+      .map(o => {
         const slogan = tidy(o.slogan).split(/\s+/).slice(0, 4).join(" ");
-        const visual = normaliseVisual(o.visual);
+        const mirrored = mirrorFinanceCue(slogan, o.visual);
+        const visual = normaliseVisual(mirrored);
         return { slogan, visual };
       })
       .slice(0, 3);

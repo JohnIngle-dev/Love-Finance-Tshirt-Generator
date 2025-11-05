@@ -1,32 +1,32 @@
 export const SLOGAN_PROMPT = `
-You create three short, metal-style slogans and a clear visual motif for each,
-based on what the user loves about finance.
+You are generating three short, heavy-metal-style slogans about what someone loves about finance.  
+For each slogan, also return a clear visual motif that fits the slogan's tone and theme — both should feel powerful, direct, and tied to money, value, or control.
 
-Return JSON ONLY in this shape:
+Return JSON ONLY in this format:
 [
-  { "slogan": "SLOGAN 1", "visual": "OBJECT (optional constraint), OBJECT (optional constraint)" },
-  { "slogan": "SLOGAN 2", "visual": "..." },
-  { "slogan": "SLOGAN 3", "visual": "..." }
+  { "slogan": "SLOGAN 1", "visual": "VISUAL 1" },
+  { "slogan": "SLOGAN 2", "visual": "VISUAL 2" },
+  { "slogan": "SLOGAN 3", "visual": "VISUAL 3" }
 ]
 
-Guidelines
-- Exactly 3 options.
-- Slogan: 1–4 words. Punchy, metal energy.
-- Visual motif: 1–2 simple objects that clearly match the slogan (directly or metaphorically).
-- Keep it depictable on a T-shirt: obvious subjects, short constraints only where helpful.
-- If the slogan names a finance object, include that same object in the motif.
+Rules:
+- Always produce exactly three options.
+- Slogan: 1–4 words. Must sound like a metal band lyric or anthem — strong verbs, intensity, rhythm.
+- Visual motif: a single vivid image that clearly matches the slogan and feels money-related — either literally (cash, coins, gold bars, calculators, computers, receipts, safes, credit cards, vaults) 
+- The visual must be something recognisable and printable — no abstract ideas.
+- Prefer combining finance items with aggressive or symbolic imagery (fire, lightning, skulls, wings, crowns, chains, serpents, etc.).
+- Avoid vague objects (like “vault” alone). Instead, describe what’s happening:  
+  e.g. “open vault spilling coins”, “bar chart made of fire”, “broken calculator (no numbers)”.
+- If a visual includes text, numbers, or logos, specify: “no numbers or text”.
+- Use only clear nouns and short modifiers (no sentences).
 
-Clarity rules (light)
-- Currency: “plain coins (no symbols)” or “plain notes (no symbols or text)”.
-- Devices/records: calculators, computers, screens → “(no numbers or text)”; ledgers/books → “(no text)”.
-- Compass: “(no numbers or letters)”.
-- Charts: say the type explicitly, e.g. “3D bar chart (neon glass)”.
-- Avoid logos, readable text, or numbers in motifs.
-
-Examples (style only)
-- "In formulas we trust" → "cross (bold), prayer hands (stylised)"
-- "Tax warrior" → "calculator (smashed, no numbers or text)"
-- "Cash is king" → "crown (gold), plain notes (no symbols or text)"
+Examples:
+- "In Formulas We Trust" → "cross made of coins (no symbols)"
+- "Tax Warrior" → "calculator cracked open, sparks flying (no numbers)"
+- "Cash Is King" → "gold crown with notes swirling (no text)"
+- "Audit or Die" → "bar chart made of bones"
+- "Balance Sheet Reaper" → "grim reaper with ledger (no text)"
+- "Compound Carnage" → "coins forming a skull"
 
 User input:
 "{{love}}"

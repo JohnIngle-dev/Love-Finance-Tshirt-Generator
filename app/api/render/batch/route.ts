@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import path from "path";
 import fs from "fs/promises";
 import Replicate from "replicate";
-import { REFS_MANIFEST, type ManifestEntry } from "../render/refs-manifest";
+import { REFS_MANIFEST, type ManifestEntry } from "../refs-manifest"; // <-- fixed
 
 export const runtime = "nodejs";
 
@@ -18,10 +18,8 @@ function refUrl(baseUrl: string, file: string) {
   return `${baseUrl}/refs/${encodeURIComponent(file)}`;
 }
 function buildPrompt(slogan: string, visual: string, entry: ManifestEntry) {
-  // Your agreed structure
   return `Replace text in the image with "${slogan}", replace ${entry.replace} with ${visual}, keep ${entry.keep}.`;
 }
-
 function shuffle<T>(arr: T[]) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -46,20 +44,14 @@ export async function POST(req: Request) {
     const refsDir = path.join(process.cwd(), "public", "refs");
     let all = await fs.readdir(refsDir).catch(() => []);
     all = all.filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f));
-
     if (!all.length) {
       return NextResponse.json({ error: "No reference images found in /public/refs" }, { status: 500 });
     }
 
-    // Build selection pool
-    let pool = Array.isArray(files) && files.length
-      ? all.filter((f) => files.includes(f))
-      : all;
-
+    let pool = Array.isArray(files) && files.length ? all.filter((f) => files.includes(f)) : all;
     if (Array.isArray(excludeFiles) && excludeFiles.length) {
       pool = pool.filter((f) => !excludeFiles.includes(f));
     }
-
     if (!pool.length) pool = all;
 
     const chosen = shuffle(pool).slice(0, Math.max(1, Math.min(4, count)));
@@ -94,11 +86,7 @@ export async function POST(req: Request) {
       })
     );
 
-    return NextResponse.json({
-      modelRef: model,
-      count: results.length,
-      items: results,
-    });
+    return NextResponse.json({ modelRef: model, count: results.length, items: results });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Batch render failed" }, { status: 500 });
   }
